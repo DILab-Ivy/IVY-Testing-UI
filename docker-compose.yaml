@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8002:8002"
+    volumes:
+      - flagged_data:/app/flagged
+    env_file:
+      - .env
+
+volumes:
+  flagged_data:
