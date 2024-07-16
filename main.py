@@ -3,8 +3,8 @@ import pathlib
 
 import gradio as gr
 import httpx
-import openai
-from typing import List
+from gpp_openai_assistant import get_openai_response
+
 
 # Ensure environment variable is set
 if not os.getenv("MCM_URL"):
@@ -26,27 +26,6 @@ def get_mcm_response(question: str) -> str:
         timeout=timeout_secs.value,
     )
     return response.json()["response"]
-
-# OpenAI Response Function
-def get_openai_response(question: str) -> str:
-    client = openai.OpenAI()
-    ASSISTANT_ID = "asst_iMCg2aqO343Sik6YWP3BDADq"
-
-    class EventHandler(openai.AssistantEventHandler):
-        def on_event(self, event: openai.types.beta.AssistantStreamEvent) -> None:
-            pass
-
-        def on_text_delta(self, delta: openai.types.beta.TextDelta, snapshot: openai.types.beta.threads.Text) -> None:
-            pass
-
-    thread = client.beta.threads.create(
-        messages=[
-            {
-                "role": "user",
-                "content": question,
-            },
-        ]
-    )
 
     with client.beta.threads.runs.stream(
         thread_id=thread.id,
