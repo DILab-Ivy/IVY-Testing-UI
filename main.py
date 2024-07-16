@@ -35,7 +35,7 @@ with gr.Blocks() as demo:
             with gr.Row():
                 # MCM URL
                 mcm_url = gr.Textbox(
-                    value=os.getenv("MCM_URL_test")
+                    value=os.getenv("MCM_URL")
                     or "http://localhost:8001/ivy/ask_question",  # Default URL
                     label="MCM URL",
                     interactive=True,
@@ -59,7 +59,7 @@ with gr.Blocks() as demo:
 
     # Question Input
     question = gr.TextArea(
-        label="Question", placeholder="Please type your question here..."
+        label="test_Question", placeholder="Please type your question here..."
     )
 
     with gr.Row():
