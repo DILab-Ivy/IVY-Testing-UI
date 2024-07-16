@@ -3,7 +3,7 @@ import pathlib
 
 import gradio as gr
 import httpx
-from gpp_openai_assistant import get_openai_response
+from gpp_openai_assistant import get_openai_gpp_response
 
 
 # Ensure environment variable is set
@@ -111,7 +111,7 @@ with gr.Blocks() as demo:
         if chatbot == "MCM":
             return get_mcm_response(question)
         elif chatbot == "OpenAI":
-            return get_openai_response(question)
+            return get_openai_gpp_response(question)
         return "Invalid selection"
 
     def on_clear_click():
