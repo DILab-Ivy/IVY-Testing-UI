@@ -3,7 +3,7 @@ import pathlib
 
 import gradio as gr
 import httpx
-from gpp_openai_assistant import get_openai_gpp_response
+from gpp_openai_assistant import get_mage_gpp_response
 
 
 # Ensure environment variable is set
@@ -72,7 +72,7 @@ with gr.Blocks() as demo:
 
     # Chatbot Selection
     chatbot_selector = gr.Dropdown(
-        choices=["MCM", "OpenAI"],
+        choices=["MCM", "MAGE - GPP function calling experiment"],
         value="MCM",
         label="Select Chatbot"
     )
@@ -110,8 +110,8 @@ with gr.Blocks() as demo:
     def on_submit_click(question, chatbot):
         if chatbot == "MCM":
             return get_mcm_response(question)
-        elif chatbot == "OpenAI":
-            return get_openai_gpp_response(question)
+        elif chatbot == "MAGE - GPP function calling experiment":
+            return get_mage_gpp_response(question)
         return "Invalid selection"
 
     def on_clear_click():
