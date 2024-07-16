@@ -35,7 +35,7 @@ with gr.Blocks() as demo:
             with gr.Row():
                 # MCM URL
                 mcm_url = gr.Textbox(
-                    value=os.getenv("MCM_URL")
+                    value=os.getenv("MCM_URL_test")
                     or "http://localhost:8001/ivy/ask_question",  # Default URL
                     label="MCM URL",
                     interactive=True,
