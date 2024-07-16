@@ -59,7 +59,7 @@ with gr.Blocks() as demo:
 
     # Question Input
     question = gr.TextArea(
-        label="test_Question", placeholder="Please type your question here..."
+        label="Question", placeholder="Please type your question here..."
     )
 
     with gr.Row():
