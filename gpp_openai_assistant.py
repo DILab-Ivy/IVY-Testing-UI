@@ -10,6 +10,7 @@ from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
 from typing import List
 
+
 # OpenAI Response Function
 def get_mage_gpp_response(question: str) -> str:
     client = openai.OpenAI()
@@ -63,7 +64,7 @@ def get_mage_gpp_response(question: str) -> str:
         return True
 
     def get_next_states(
-        curr_state: List[int]) -> List[List[int]]:
+            curr_state: List[int]) -> List[List[int]]:
         """
         Curr state is in format [Guards Left, Guards Right, Prisoners Left, Prisoners Right, Boat Position]
 
@@ -215,7 +216,6 @@ def get_mage_gpp_response(question: str) -> str:
         print(f"result: {result}")
         return result
 
-
     class EventHandler(AssistantEventHandler):
         @override
         def on_event(self, event: AssistantStreamEvent) -> None:
@@ -252,42 +252,59 @@ def get_mage_gpp_response(question: str) -> str:
                     if tool.type == "code_interpreter" and tool.code_interpreter and tool.code_interpreter.input:
                         print(tool.code_interpreter.input, end="", flush=True)
 
-        def handle_requires_action(self, data, run_id):
+        def handle_requires_action(self, data, run_id, tool_id=None):
+            def empty_args_error(tool):
+                missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
+                print(missing_arg_error_message)
+                tool_outputs.append({"tool_call_id": tool.id, "output": missing_arg_error_message})
+
+
             tool_outputs = []
 
-            # TODO: get this properly formatted for new function
             for tool in data.required_action.submit_tool_outputs.tool_calls:
+                print(f'tool.function.arguments: {tool.function.arguments}')
                 if tool.function.name == "get_next_states":
+                    if len(tool.function.arguments) < 3:
+                        empty_args_error(tool)
+                        continue
                     # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
                     args = ast.literal_eval(tool.function.arguments)
                     try:
                         curr_state = args["state"]
                     except KeyError:
-                        print('parameter name hallucination detected')
-                        print(f'arguments: {tool.function.arguments}')
-                        args_values_list = list(args.values())
-                        curr_state = args_values_list[0]
+                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
+                        print(error_message)
+                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+                        continue
+                        # # TODO: if the above isn't working well or you don't want to re-call function constantly then you can simply grab the first provided argument
+                        # args_values_list = list(args.values())
+                        # curr_state = args_values_list[0]
                     function_output = get_next_states(curr_state)
                     function_output = str(function_output)
                     tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
                 elif tool.function.name == "validate_state":
+                    if len(tool.function.arguments) < 3:
+                        empty_args_error(tool)
+                        continue
                     # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
                     args = ast.literal_eval(tool.function.arguments)
                     try:
                         curr_state = args["state"]
                     except KeyError:
-                        print('parameter name hallucination detected')
-                        print(f'arguments: {tool.function.arguments}')
-                        args_values_list = list(args.values())
-                        curr_state = args_values_list[0]
+                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
+                        print(error_message)
+                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+                        continue
+                        # args_values_list = list(args.values())
+                        # curr_state = args_values_list[0]
                     function_output = validate_state(curr_state)
                     function_output = str(function_output)
                     tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
 
             # Submit all tool_outputs at the same time
-            self.submit_tool_outputs(tool_outputs, run_id)
+            self.submit_tool_outputs(tool_outputs)
 
-        def submit_tool_outputs(self, tool_outputs, run_id):
+        def submit_tool_outputs(self, tool_outputs):
             # client = openai.OpenAI()
             # Use the submit_tool_outputs_stream helper
             with client.beta.threads.runs.submit_tool_outputs_stream(
@@ -365,9 +382,9 @@ def get_mage_gpp_response(question: str) -> str:
     )
 
     with client.beta.threads.runs.stream(
-        thread_id=thread.id,
-        assistant_id=assistant.id,
-        event_handler=EventHandler(),
+            thread_id=thread.id,
+            assistant_id=assistant.id,
+            event_handler=EventHandler(),
     ) as stream:
         stream.until_done()
         # print()
