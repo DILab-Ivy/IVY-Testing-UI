@@ -1,3 +1,4 @@
 gradio
 httpx
 python-dotenv
+boto3
