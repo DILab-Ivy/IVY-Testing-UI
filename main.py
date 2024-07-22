@@ -1,5 +1,6 @@
 import os
 import pathlib
+import time
 
 import gradio as gr
 import httpx
@@ -24,10 +25,15 @@ def get_mcm_response(question: str) -> str:
     return response.json()["response"]
 
 
+commended_csv_logger = gr.CSVLogger()
+flagged_csv_logger = gr.CSVLogger()
+flagged_csv_path = pathlib.Path("flagged/log.csv")
+username = "Dummy Username"
+
+
 with gr.Blocks() as demo:
     # Title
-    gr.Markdown("# Ivy Chatbot UI")
-
+    gr.Markdown("# Ivy Chatbot")
     # Settings
     with gr.Accordion("Settings", open=False):
         # MCM Settings
@@ -36,7 +42,7 @@ with gr.Blocks() as demo:
                 # MCM URL
                 mcm_url = gr.Textbox(
                     value=os.getenv("MCM_URL")
-                    or "http://localhost:8001/ivy/ask_question",  # Default URL
+                    or "https://classification.dilab-ivy.com/ivy/ask_question",  # Default URL
                     label="MCM URL",
                     interactive=True,
                 )
@@ -57,57 +63,71 @@ with gr.Blocks() as demo:
                 interactive=True,
             )
 
-    # Question Input
-    question = gr.TextArea(
-        label="Question", placeholder="Please type your question here..."
+    chatbot = gr.Chatbot(
+        label="Your Conversation",
+        show_copy_button=True,
+        placeholder="Your conversations will appear here...",
     )
-
+    msg = gr.Textbox(
+        label="Question",
+        placeholder="Please enter your question here...",
+        show_copy_button=True,
+        autofocus=True,
+        show_label=True,
+    )
     with gr.Row():
-        # Output
-        output = gr.TextArea(
-            label="Output",
-            placeholder="Answer will appear here...",
-            show_copy_button=True,
+        submit = gr.Button(value="Submit", variant="primary")
+        clear = gr.Button(value="Clear", variant="stop")
+    with gr.Row():
+        flag_btn = gr.Button(value="Flag last response", variant="secondary")
+        download_btn = gr.Button(
+            value="Download Flagged Responses",
+            variant="secondary",
+            link="/file=flagged/log.csv",
         )
 
-    with gr.Row():
-        # Submit Button
-        submit_button = gr.Button(value="Submit", variant="primary")
-        # Clear Button
-        clear_button = gr.Button(value="Clear", variant="stop")
+    def update_user_message(user_message, history):
+        return "", history + [[user_message, None]]
 
-    with gr.Row():
-        # Flag
-        flag_btn = gr.Button(value="Save For Review", variant="secondary")
-        # Download
-        download_btn = gr.DownloadButton(
-            label="Download Logs", value=csv_path, visible=True
-        )
+    def get_response_from_ivy(history):
+        history[-1][1] = ""
+        response = get_mcm_response(history[-1][0])
+        for character in response:
+            history[-1][1] += character
+            time.sleep(0.008)
+            yield history
 
-    csv_logger.setup([question, output], "flagged")
-
-    # Callbacks
-    def on_submit_click(question):
-        return get_mcm_response(question)
-
-    def on_clear_click():
-        return "", ""
-
-    def on_flag_click(*args):
-        if not args[0] and not args[1]:
-            gr.Warning("No data to save!")
+    def log_commended_response(history):
+        if len(history) == 0:
             return
+        commended_csv_logger.flag(history[-1], username=username)
+        gr.Info("Saved successfully!", duration=0.5)
 
-        csv_logger.flag(args)
-        gr.Info("Saved successfully!")
+    def log_flagged_response(history):
+        if len(history) == 0:
+            return
+        flagged_csv_logger.flag(history[-1], username=username)
+        gr.Info("Saved successfully!", duration=0.5)
 
-    submit_button.click(on_submit_click, inputs=[question], outputs=[output])
-    clear_button.click(on_clear_click, outputs=[question, output])
-    flag_btn.click(
-        on_flag_click,
-        [question, output],
-        None,
-        preprocess=False,
-    )
+    def chat_liked_or_disliked(history, data: gr.LikeData):
+        question = history[data.index[0]][0]
+        response = history[data.index[0]][1]
+        if data.liked:
+            log_commended_response([[question, response]])
+        else:
+            log_flagged_response([[question, response]])
 
-demo.launch()
+    commended_csv_logger.setup([msg, msg], "commended")
+    flagged_csv_logger.setup([msg, msg], "flagged")
+    msg.submit(
+        update_user_message, [msg, chatbot], [msg, chatbot], queue=False
+    ).success(get_response_from_ivy, chatbot, chatbot)
+    submit.click(
+        update_user_message, [msg, chatbot], [msg, chatbot], queue=False
+    ).success(get_response_from_ivy, chatbot, chatbot)
+    chatbot.like(chat_liked_or_disliked, chatbot, None)
+    clear.click(lambda: None, None, chatbot, queue=False)
+    flag_btn.click(log_flagged_response, chatbot, None)
+
+demo.queue()
+demo.launch(allowed_paths=["flagged/", "commended/"])
