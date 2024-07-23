@@ -319,7 +319,7 @@ def get_mage_gpp_response(question: str) -> str:
 
     ## Below can be used to create a new OAI assistant and define its interactions with functions
     # assistant = client.beta.assistants.create(
-    #     name='GPP bot v10 - multi function handling',
+    #     name='GPP bot v11 - multi function handling',
     #     instructions="You are a helpful tutor who helps students understand the guards and prisoners problem. This is the guards and prisoners problem: In the guards and prisoners problem, m guards and n prisoners must cross a river using a boat which can carry at most two people, under the constraint that, for both banks, if there are guards present on the bank, they cannot be outnumbered by prisoners (if they were, the prisoners would overpower the guards). The boat cannot cross the river by itself with no people on board. Initially, all m guards and n prisoners are on the left side of the bank. We use the following notation to denote the situation: [3, 0, 3, 0, 0]. This means that there are [3 Guards on the left, 0 guards on the right, 3 prisoners on the left, 0 prisoners on the right, boat on the left]. You will be given access to a function called get_next_states that you can pass states to in order to find out the next states. Do not try to figure out next states on your own. You will be given access to a function called validate_state that you should use when you are asked whether a certain state is valid or legal. You should always use the functions to help you when asked questions relevant to them",
     #     model="gpt-4o",
     #     tools=[
@@ -365,7 +365,8 @@ def get_mage_gpp_response(question: str) -> str:
     # )
     # ASSISTANT_ID = assistant.id
     # print(ASSISTANT_ID)
-    ASSISTANT_ID = "asst_KuvzrM2XDMLGAke8qknm1Xmt"
+    # ASSISTANT_ID = "asst_KuvzrM2XDMLGAke8qknm1Xmt" #V10
+    ASSISTANT_ID = "asst_2r1rHMIpTsnB9lJR1dYPGZOm"
 
     # Load the existing assistant
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
