@@ -1,6 +1,7 @@
 import os
 import pathlib
 import time
+from datetime import datetime
 
 import gradio as gr
 import httpx
@@ -12,6 +13,10 @@ if not os.getenv("MCM_URL"):
 #Initializes a CSV logger and sets the path for logging flagged responses
 # csv_logger = gr.CSVLogger()
 # csv_path = pathlib.Path("flagged/log.csv")
+
+#Encoded variables, TODO: need to integrate with a login interface
+username = "Dummy Username"
+session_id = '0'
 
 #Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
@@ -30,22 +35,6 @@ def get_mcm_response(question: str) -> str:
         timeout=timeout_secs.value,
     )
     return response.json()["response"]
-
-#Save Login data to dynamoDB
-def log_user_login(user_id, session_id):
-    timestamp = int(time.time())
-    login_data = {
-        'user_id': user_id,
-        'session_id': session_id,
-        'timestamp': timestamp
-    }
-    login_table.put_item(Item=login_data)
-
-#Additional Loggers and User Info using CSV Logger
-# commended_csv_logger = gr.CSVLogger()
-# flagged_csv_logger = gr.CSVLogger()
-# flagged_csv_path = pathlib.Path("flagged/log.csv")
-username = "Dummy Username"
 
 #Gradio Interface Setup
 with gr.Blocks() as demo:
@@ -103,18 +92,64 @@ with gr.Blocks() as demo:
             link="/file=flagged/log.csv",
         )
 
-#Function Definitions for Interaction
+    #Not integrated yet: Save Login data to dynamoDB
+    def log_user_login(user_id, session_id):
+        timestamp = time.time()
+        dt = datetime.fromtimestamp(timestamp)
+        timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        login_data = {
+            'username': user_id,
+            'session_id': session_id,
+            'timestamp': timestamp
+        }
+        login_table.put_item(Item=login_data)
+
     def log_chat_history(user_id, session_id, question, response, reaction):
-    timestamp = int(time.time())
-    chat_data = {
-        'user_id': user_id,
-        'session_id': session_id,
-        'timestamp': timestamp,
-        'question': question,
-        'response': response,
-        'reaction': reaction
-    }
-    chat_history_table.put_item(Item=chat_data)
+        timestamp = time.time()
+        dt = datetime.fromtimestamp(timestamp)
+        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        
+        chat_data = {
+            'username': user_id,
+            'session_id': session_id,
+            'timestamp': formatted_timestamp,
+            'question': question,
+            'response': response,
+            'reaction': reaction
+        }
+
+        # Check if item exists and update or put item
+        existing_item = chat_history_table.get_item(
+            Key={
+                'username': user_id,
+                'timestamp': formatted_timestamp,
+            }
+        )
+        
+        if 'Item' in existing_item:
+            update_chat_history(user_id, session_id, question, response, reaction)
+        else:
+            chat_history_table.put_item(Item=chat_data)
+            #print("Chat data logged successfully")
+
+    def update_chat_history(user_id, session_id, question, response, reaction):
+        timestamp = time.time()
+        dt = datetime.fromtimestamp(timestamp)
+        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        
+        # Update item in DynamoDB
+        response = chat_history_table.update_item(
+            Key={
+                'username': user_id,
+                'timestamp': formatted_timestamp,
+            },
+            UpdateExpression='SET reaction = :reaction',
+            ExpressionAttributeValues={
+                ':reaction': reaction
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+
 
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
@@ -126,6 +161,8 @@ with gr.Blocks() as demo:
             history[-1][1] += character
             time.sleep(0.008)
             yield history
+        # Log to DynamoDB every interaction here
+        log_chat_history(username, session_id, history[-1][0], history[-1][1], 'no_reaction')
 
     # def log_commended_response(history):
     #     if len(history) == 0:
@@ -138,7 +175,7 @@ with gr.Blocks() as demo:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(username, 'session_id', question, response, 'liked')
+        log_chat_history(username, session_id, question, response, 'liked')
         gr.Info("Saved successfully!", duration=0.5)
 
     # def log_flagged_response(history):
@@ -152,7 +189,7 @@ with gr.Blocks() as demo:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(username, 'session_id', question, response, 'disliked')
+        log_chat_history(username, session_id, question, response, 'disliked')
         gr.Info("Saved successfully!", duration=0.5)
 
 
@@ -164,9 +201,15 @@ with gr.Blocks() as demo:
         else:
             log_flagged_response([[question, response]])
 
-#Gradio Event Handling
+    #Additional Loggers and User Info using CSV Logger
+    # commended_csv_logger = gr.CSVLogger()
+    # flagged_csv_logger = gr.CSVLogger()
+    # flagged_csv_path = pathlib.Path("flagged/log.csv")
+
+    #Gradio Event Handling
     # commended_csv_logger.setup([msg, msg], "commended")
     # flagged_csv_logger.setup([msg, msg], "flagged")
+
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
     ).success(get_response_from_ivy, chatbot, chatbot)
