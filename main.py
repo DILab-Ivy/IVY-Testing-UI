@@ -177,7 +177,7 @@ with gr.Blocks() as demo:
         response = history[-1][1]
         question = history[-1][0]
         log_chat_history(username, session_id, question, response, 'liked')
-        gr.Info("Saved successfully!", duration=0.5)
+        gr.Info("Saved successfully!")
 
     # def log_flagged_response(history):
     #     if len(history) == 0:
@@ -191,7 +191,7 @@ with gr.Blocks() as demo:
         response = history[-1][1]
         question = history[-1][0]
         log_chat_history(username, session_id, question, response, 'disliked')
-        gr.Info("Saved successfully!", duration=0.5)
+        gr.Info("Saved successfully!")
 
 
     def chat_liked_or_disliked(history, data: gr.LikeData):
