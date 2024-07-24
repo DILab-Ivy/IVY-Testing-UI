@@ -10,10 +10,6 @@ import boto3
 if not os.getenv("MCM_URL"):
     raise ValueError("Please set the MCM_URL environment variable")
 
-#Initializes a CSV logger and sets the path for logging flagged responses
-# csv_logger = gr.CSVLogger()
-# csv_path = pathlib.Path("flagged/log.csv")
-
 #Encoded variables, TODO: need to integrate with a login interface
 username = "Dummy Username"
 session_id = '0'
@@ -91,7 +87,6 @@ with gr.Blocks() as demo:
             variant="secondary",
             link="/file=flagged/log.csv",
         )
-
     #Not integrated yet: Save Login data to dynamoDB
     def log_user_login(user_id, session_id):
         timestamp = time.time()
@@ -151,7 +146,6 @@ with gr.Blocks() as demo:
             ReturnValues='UPDATED_NEW'
         )
 
-
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
 
@@ -165,11 +159,6 @@ with gr.Blocks() as demo:
         # Log to DynamoDB every interaction here
         log_chat_history(username, session_id, history[-1][0], history[-1][1], 'no_reaction')
 
-    # def log_commended_response(history):
-    #     if len(history) == 0:
-    #         return
-    #     commended_csv_logger.flag(history[-1], username=username)
-    #     gr.Info("Saved successfully!", duration=0.5)
 
     def log_commended_response(history):
         if len(history) == 0:
@@ -179,18 +168,20 @@ with gr.Blocks() as demo:
         log_chat_history(username, session_id, question, response, 'liked')
         gr.Info("Saved successfully!")
 
-    # def log_flagged_response(history):
-    #     if len(history) == 0:
-    #         return
-    #     flagged_csv_logger.flag(history[-1], username=username)
-    #     gr.Info("Saved successfully!", duration=0.5)
-
-    def log_flagged_response(history):
+    def log_disliked_response(history):
         if len(history) == 0:
             return
         response = history[-1][1]
         question = history[-1][0]
         log_chat_history(username, session_id, question, response, 'disliked')
+        gr.Info("Saved successfully!")
+    
+    def log_flagged_response(history):
+        if len(history) == 0:
+            return
+        response = history[-1][1]
+        question = history[-1][0]
+        log_chat_history(username, session_id, question, response, 'flagged')
         gr.Info("Saved successfully!")
 
 
@@ -200,16 +191,7 @@ with gr.Blocks() as demo:
         if data.liked:
             log_commended_response([[question, response]])
         else:
-            log_flagged_response([[question, response]])
-
-    #Additional Loggers and User Info using CSV Logger
-    # commended_csv_logger = gr.CSVLogger()
-    # flagged_csv_logger = gr.CSVLogger()
-    # flagged_csv_path = pathlib.Path("flagged/log.csv")
-
-    #Gradio Event Handling
-    # commended_csv_logger.setup([msg, msg], "commended")
-    # flagged_csv_logger.setup([msg, msg], "flagged")
+            log_disliked_response([[question, response]])
 
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
