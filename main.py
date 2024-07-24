@@ -20,8 +20,8 @@ session_id = '0'
 
 #Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
-login_table = dynamodb.Table('User_Login')
-chat_history_table = dynamodb.Table('Chat_History')
+login_table = dynamodb.Table('UserLogin')
+chat_history_table = dynamodb.Table('ChatHistory')
 
 #Sends a POST request to the MCM, Returns response
 def get_mcm_response(question: str) -> str:
@@ -98,39 +98,40 @@ with gr.Blocks() as demo:
         dt = datetime.fromtimestamp(timestamp)
         timestamp = dt.strftime('%b-%d-%Y_%H:%M')
         login_data = {
-            'username': user_id,
-            'session_id': session_id,
-            'timestamp': timestamp
+            'Username': user_id,
+            'SessionId': session_id,
+            'Timestamp': timestamp
         }
         login_table.put_item(Item=login_data)
 
     def log_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        timestamp = dt.strftime('%b-%d-%Y_%H:%M')
         
         chat_data = {
-            'username': user_id,
-            'session_id': session_id,
-            'timestamp': formatted_timestamp,
-            'question': question,
-            'response': response,
-            'reaction': reaction
+            'Username': user_id,
+            'SessionId': session_id,
+            'Timestamp': timestamp,
+            'Question': question,
+            'Response': response,
+            'Reaction': reaction
         }
 
         # Check if item exists and update or put item
         existing_item = chat_history_table.get_item(
             Key={
-                'username': user_id,
-                'timestamp': formatted_timestamp,
+                'Username': user_id,
+                'Timestamp': timestamp,
             }
         )
         
         if 'Item' in existing_item:
             update_chat_history(user_id, session_id, question, response, reaction)
+            print("Chat data updated successfully")
         else:
             chat_history_table.put_item(Item=chat_data)
-            #print("Chat data logged successfully")
+            print("Chat data logged successfully")
 
     def update_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
@@ -140,10 +141,10 @@ with gr.Blocks() as demo:
         # Update item in DynamoDB
         response = chat_history_table.update_item(
             Key={
-                'username': user_id,
-                'timestamp': formatted_timestamp,
+                'Username': user_id,
+                'Timestamp': formatted_timestamp,
             },
-            UpdateExpression='SET reaction = :reaction',
+            UpdateExpression='SET Reaction = :reaction',
             ExpressionAttributeValues={
                 ':reaction': reaction
             },
