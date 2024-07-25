@@ -1,136 +1,43 @@
-import os
-import pathlib
 import gradio as gr
-import httpx
-from gpp_openai_assistant import get_mage_gpp_response
+import openai
+import threading
 
+# Initialize OpenAI API key
+openai.api_key = 'your_openai_api_key'
 
-# Ensure environment variable is set
-if not os.getenv("MCM_URL"):
-    raise ValueError("Please set the MCM_URL environment variable")
+# Global variable to store the conversation history
+conversation_history = []
 
-# Initialize CSV Logger
-csv_logger = gr.CSVLogger()
-csv_path = pathlib.Path("flagged/log.csv")
+def stream_response(prompt, conversation_history):
+    # Append user prompt to conversation history
+    conversation_history.append({"role": "user", "content": prompt})
 
-# MCM Response Function
-def get_mcm_response(question: str) -> str:
-    response = httpx.post(
-        mcm_url.value,
-        json={
-            "question": question,
-            "api_key": mcm_api_key.value,
-            "Episodic_Knowledge": {},
-        },
-        timeout=timeout_secs.value,
-    )
-    return response.json()["response"]
-
-    with client.beta.threads.runs.stream(
-        thread_id=thread.id,
-        assistant_id=ASSISTANT_ID,
-        event_handler=EventHandler(),
-    ) as stream:
-        response = ""
-        for delta in stream.text_deltas:
-            response += delta.value
-        return response
-
-with gr.Blocks() as demo:
-    # Title
-    gr.Markdown("# Ivy Chatbot UI")
-
-    # Settings
-    with gr.Accordion("Settings", open=False):
-        # MCM Settings
-        with gr.Group("MCM Settings"):
-            with gr.Row():
-                # MCM URL
-                mcm_url = gr.Textbox(
-                    value=os.getenv("MCM_URL")
-                    or "http://localhost:8001/ivy/ask_question",  # Default URL
-                    label="MCM URL",
-                    interactive=True,
-                )
-                # MCM API Key
-                mcm_api_key = gr.Textbox(
-                    value="123456789",
-                    label="MCM API Key",
-                    interactive=True,
-                )
-
-        with gr.Group("General Settings"):
-            timeout_secs = gr.Slider(
-                label="Timeout (seconds)",
-                minimum=5,
-                maximum=300,
-                step=5,
-                value=60,
-                interactive=True,
-            )
-
-    # Chatbot Selection
-    chatbot_selector = gr.Dropdown(
-        choices=["MCM", "MAGE - GPP function calling experiment"],
-        value="MCM",
-        label="Select Chatbot"
+    # Call OpenAI API to get response
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=conversation_history,
+        stream=True
     )
 
-    # Question Input
-    question = gr.TextArea(
-        label="Question", placeholder="Please type your question here..."
-    )
+    # Stream the response to the UI
+    full_response = ""
+    for chunk in response:
+        if 'choices' in chunk and len(chunk['choices']) > 0:
+            content = chunk['choices'][0]['delta'].get('content', '')
+            full_response += content
+            yield full_response  # Stream the response part by part to the UI
 
-    with gr.Row():
-        # Output
-        output = gr.TextArea(
-            label="Output",
-            placeholder="Answer will appear here...",
-            show_copy_button=True,
-        )
+    # Append assistant's response to conversation history
+    conversation_history.append({"role": "assistant", "content": full_response})
 
-    with gr.Row():
-        # Submit Button
-        submit_button = gr.Button(value="Submit", variant="primary")
-        # Clear Button
-        clear_button = gr.Button(value="Clear", variant="stop")
+def respond(prompt):
+    return stream_response(prompt, conversation_history)
 
-    with gr.Row():
-        # Flag
-        flag_btn = gr.Button(value="Save For Review", variant="secondary")
-        # Download
-        download_btn = gr.DownloadButton(
-            label="Download Logs", value=csv_path, visible=True
-        )
+# Gradio interface
+iface = gr.Interface(fn=respond,
+                     inputs=gr.Textbox(lines=2, placeholder="Ask me anything..."),
+                     outputs=gr.Textbox(),
+                     live=True)
 
-    csv_logger.setup([question, output], "flagged")
-
-    # Callbacks
-    def on_submit_click(question, chatbot):
-        if chatbot == "MCM":
-            return get_mcm_response(question)
-        elif chatbot == "MAGE - GPP function calling experiment":
-            return get_mage_gpp_response(question)
-        return "Invalid selection"
-
-    def on_clear_click():
-        return "", ""
-
-    def on_flag_click(*args):
-        if not args[0] and not args[1]:
-            gr.Warning("No data to save!")
-            return
-
-        csv_logger.flag(args)
-        gr.Info("Saved successfully!")
-
-    submit_button.click(on_submit_click, inputs=[question, chatbot_selector], outputs=[output])
-    clear_button.click(on_clear_click, outputs=[question, output])
-    flag_btn.click(
-        on_flag_click,
-        [question, output],
-        None,
-        preprocess=False,
-    )
-
-demo.launch()
+# Launch the interface
+iface.launch()
