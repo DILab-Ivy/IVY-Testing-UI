@@ -1,26 +1,19 @@
 import os
 import pathlib
-import time
-from datetime import datetime
-
 import gradio as gr
 import httpx
-import boto3
+from gpp_openai_assistant import get_mage_gpp_response
 
+
+# Ensure environment variable is set
 if not os.getenv("MCM_URL"):
     raise ValueError("Please set the MCM_URL environment variable")
 
-# Encoded variables, TODO: need to integrate with a login interface
-username = "Dummy Username"
-session_id = '0'
+# Initialize CSV Logger
+csv_logger = gr.CSVLogger()
+csv_path = pathlib.Path("flagged/log.csv")
 
-# Initialize DynamoDB
-dynamodb = boto3.resource('dynamodb')
-login_table = dynamodb.Table('UserLogin')
-chat_history_table = dynamodb.Table('ChatHistory')
-
-
-# Sends a POST request to the MCM, Returns response
+# MCM Response Function
 def get_mcm_response(question: str) -> str:
     response = httpx.post(
         mcm_url.value,
@@ -33,11 +26,26 @@ def get_mcm_response(question: str) -> str:
     )
     return response.json()["response"]
 
+    with client.beta.threads.runs.stream(
+        thread_id=thread.id,
+        assistant_id=ASSISTANT_ID,
+        event_handler=EventHandler(),
+    ) as stream:
+        response = ""
+        for delta in stream.text_deltas:
+            response += delta.value
+        return response
 
 # Gradio Interface Setup
 with gr.Blocks() as demo:
     # Title
     gr.Markdown("# Ivy Chatbot")
+    # Chatbot Selection
+    chatbot_selector = gr.Dropdown(
+        choices=["MCM", "MAGE - GPP function calling experiment","option 3"],
+        value="MCM",
+        label="Select Chatbot"
+    )
     # Settings
     with gr.Accordion("Settings", open=False):
         # MCM Settings
@@ -67,11 +75,14 @@ with gr.Blocks() as demo:
                 interactive=True,
             )
 
+
+
     chatbot = gr.Chatbot(
         label="Your Conversation",
         show_copy_button=True,
         placeholder="Your conversations will appear here...",
     )
+
     msg = gr.Textbox(
         label="Question",
         placeholder="Please enter your question here...",
@@ -91,129 +102,29 @@ with gr.Blocks() as demo:
         )
 
 
-    # Not integrated yet: Save Login data to dynamoDB
-    def log_user_login(user_id, session_id):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = dt.strftime('%b-%d-%Y_%H:%M')
-        login_data = {
-            'Username': user_id,
-            'SessionId': session_id,
-            'Timestamp': timestamp
-        }
-        login_table.put_item(Item=login_data)
-
-
-    def log_chat_history(user_id, session_id, question, response, reaction):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = dt.strftime('%b-%d-%Y_%H:%M')
-
-        chat_data = {
-            'Username': user_id,
-            'SessionId': session_id,
-            'Timestamp': timestamp,
-            'Question': question,
-            'Response': response,
-            'Reaction': reaction
-        }
-
-        # Check if item exists and update or put item
-        existing_item = chat_history_table.get_item(
-            Key={
-                'Username': user_id,
-                'Timestamp': timestamp,
-            }
-        )
-
-        if 'Item' in existing_item:
-            update_chat_history(user_id, session_id, question, response, reaction)
-            print("Chat data updated successfully")
-        else:
-            chat_history_table.put_item(Item=chat_data)
-            print("Chat data logged successfully")
-
-
-    def update_chat_history(user_id, session_id, question, response, reaction):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
-
-        # Update item in DynamoDB
-        response = chat_history_table.update_item(
-            Key={
-                'Username': user_id,
-                'Timestamp': formatted_timestamp,
-            },
-            UpdateExpression='SET Reaction = :reaction',
-            ExpressionAttributeValues={
-                ':reaction': reaction
-            },
-            ReturnValues='UPDATED_NEW'
-        )
-
-
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
 
 
-    def get_response_from_ivy(history):
+    def get_response(history):
         history[-1][1] = ""
         response = get_mcm_response(history[-1][0])
         for character in response:
             history[-1][1] += character
-            time.sleep(0.008)
+            # time.sleep(0.008)
             yield history
-        # Log to DynamoDB every interaction here
-        log_chat_history(username, session_id, history[-1][0], history[-1][1], 'no_reaction')
-
-
-    def log_commended_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(username, session_id, question, response, 'liked')
-        gr.Info("Saved successfully!")
-
-
-    def log_disliked_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(username, session_id, question, response, 'disliked')
-        gr.Info("Saved successfully!")
-
-
-    def log_flagged_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(username, session_id, question, response, 'flagged')
-        gr.Info("Saved successfully!")
-
-
-    def chat_liked_or_disliked(history, data: gr.LikeData):
-        question = history[data.index[0]][0]
-        response = history[data.index[0]][1]
-        if data.liked:
-            log_commended_response([[question, response]])
-        else:
-            log_disliked_response([[question, response]])
-
 
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
-    ).success(get_response_from_ivy, chatbot, chatbot)
+    ).success(get_response, chatbot, chatbot)
     submit.click(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
-    ).success(get_response_from_ivy, chatbot, chatbot)
-    chatbot.like(chat_liked_or_disliked, chatbot, None)
+    ).success(get_response, chatbot, chatbot)
+    #TODO: add in db handling
+    # chatbot.like(chat_liked_or_disliked, chatbot, None)
     clear.click(lambda: None, None, chatbot, queue=False)
-    flag_btn.click(log_flagged_response, chatbot, None)
+    # flag_btn.click(log_flagged_response, chatbot, None)
 
-# Launch the Application
+#Launch the Application
 demo.queue()
 demo.launch(allowed_paths=["flagged/", "commended/"])
