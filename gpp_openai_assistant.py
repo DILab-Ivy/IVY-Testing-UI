@@ -230,9 +230,13 @@ def get_mage_gpp_response(question: str) -> str:
 
         @override
         def on_text_delta(self, delta: TextDelta, snapshot: Text) -> None:
+            # for char in delta.value:
+            #     yield char
             print(delta.value, end="", flush=True)
-            # TODO: set up streaming directly to gradio vs building out response
+            # print(delta.value, end="", flush=True)
+            # # TODO: set up streaming directly to gradio vs building out response
             update_response(delta.value)
+            # # yield delta.value
 
         @override
         def on_run_step_done(self, run_step: RunStep) -> None:

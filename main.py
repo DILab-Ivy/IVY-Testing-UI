@@ -26,26 +26,20 @@ def get_mcm_response(question: str) -> str:
     )
     return response.json()["response"]
 
-    with client.beta.threads.runs.stream(
-        thread_id=thread.id,
-        assistant_id=ASSISTANT_ID,
-        event_handler=EventHandler(),
-    ) as stream:
-        response = ""
-        for delta in stream.text_deltas:
-            response += delta.value
-        return response
+    # with client.beta.threads.runs.stream(
+    #     thread_id=thread.id,
+    #     assistant_id=ASSISTANT_ID,
+    #     event_handler=EventHandler(),
+    # ) as stream:
+    #     response = ""
+    #     for delta in stream.text_deltas:
+    #         response += delta.value
+    #     return response
 
 # Gradio Interface Setup
 with gr.Blocks() as demo:
     # Title
     gr.Markdown("# Ivy Chatbot")
-    # Chatbot Selection
-    chatbot_selector = gr.Dropdown(
-        choices=["MCM", "MAGE - GPP function calling experiment","option 3"],
-        value="MCM",
-        label="Select Chatbot"
-    )
     # Settings
     with gr.Accordion("Settings", open=False):
         # MCM Settings
@@ -75,7 +69,13 @@ with gr.Blocks() as demo:
                 interactive=True,
             )
 
-
+    # Chatbot Selection
+    chatbot_selector = gr.Dropdown(
+        choices=["MCM", "MAGE - GPP function calling experiment"],
+        value="MAGE - GPP function calling experiment",
+        label="Select Chatbot",
+        interactive=True
+    )
 
     chatbot = gr.Chatbot(
         label="Your Conversation",
@@ -90,9 +90,9 @@ with gr.Blocks() as demo:
         autofocus=True,
         show_label=True,
     )
-    with gr.Row():
-        submit = gr.Button(value="Submit", variant="primary")
-        clear = gr.Button(value="Clear", variant="stop")
+    # with gr.Row():
+    #     submit = gr.Button(value="Submit", variant="primary")
+    #     clear = gr.Button(value="Clear", variant="stop")
     with gr.Row():
         flag_btn = gr.Button(value="Flag last response", variant="secondary")
         download_btn = gr.Button(
@@ -105,25 +105,58 @@ with gr.Blocks() as demo:
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
 
+    def get_response(history, chatbot_selector):
+        if chatbot_selector == "MCM":
+            history[-1][1] = ""
+            response = get_mcm_response(history[-1][0])
+            for character in response:
+                history[-1][1] += character
+                yield history
+        elif chatbot_selector == "MAGE - GPP function calling experiment":
+            history[-1][1] = ""
+            response_generator = get_mage_gpp_response(history[-1][0])
+            for character in response_generator:
+                history[-1][1] += character
+                yield history
 
-    def get_response(history):
-        history[-1][1] = ""
-        response = get_mcm_response(history[-1][0])
-        for character in response:
-            history[-1][1] += character
-            # time.sleep(0.008)
-            yield history
+        #
+        # def get_response(history):
+        #     pass
+
+    # # Callbacks
+    # def on_submit_click(question, chatbot):
+    #     if chatbot == "MCM":
+    #         return get_mcm_response(question)
+    #     elif chatbot == "MAGE - GPP function calling experiment":
+    #         return get_mage_gpp_response(question)
+    #     return "Invalid selection"
+    #
+    #
+    # def on_clear_click():
+    #     return "", ""
+    #
+    #
+    def on_flag_click(*args):
+        if not args[0] and not args[1]:
+            gr.Warning("No data to save!")
+            return
+    #
+    #     csv_logger.flag(args)
+    #     gr.Info("Saved successfully!")
+
+
+    # TODO: get this working with multi-bot dropdowno ge
 
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
-    ).success(get_response, chatbot, chatbot)
-    submit.click(
-        update_user_message, [msg, chatbot], [msg, chatbot], queue=False
-    ).success(get_response, chatbot, chatbot)
-    #TODO: add in db handling
-    # chatbot.like(chat_liked_or_disliked, chatbot, None)
-    clear.click(lambda: None, None, chatbot, queue=False)
-    # flag_btn.click(log_flagged_response, chatbot, None)
+    ).success(get_response, [chatbot, chatbot_selector], chatbot)
+    # submit.click(
+    #     update_user_message, [msg, chatbot], [msg, chatbot], queue=False
+    # ).success(get_response, chatbot, chatbot)
+
+    # submit_button.click(on_submit_click, inputs=[msg, chatbot], outputs=[msg, chatbot])
+    # clear.click(lambda: None, None, chatbot, queue=False)
+    flag_btn.click(on_flag_click, chatbot, None)
 
 #Launch the Application
 demo.queue()
