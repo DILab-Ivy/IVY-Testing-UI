@@ -11,6 +11,7 @@ from typing import List
 
 # OpenAI Response Function
 def get_mage_gpp_response(question: str) -> str:
+    print(f"user_question: {question}")
     client = openai.OpenAI()
     response = ""
 
@@ -27,39 +28,36 @@ def get_mage_gpp_response(question: str) -> str:
         guard_r_valid = 0 <= curr_state[1] <= num_guards
         guard_total_valid = (curr_state[0] + curr_state[1]) == num_guards
         if not guard_l_valid or not guard_r_valid or not guard_total_valid:
-            print(
-                f"Invalid state: {curr_state} - Number of guards are not between 0 and {num_guards}"
-            )
-            return False
+            log = f"Invalid state: {curr_state} - Number of guards are not between 0 and {num_guards}"
+            print(log)
+            return False, log
 
         # Check if the number of prisoners are valid
         pris_l_valid = 0 <= curr_state[2] <= num_prisoners
         pris_r_valid = 0 <= curr_state[3] <= num_prisoners
         pris_total_valid = (curr_state[2] + curr_state[3]) == num_prisoners
         if not pris_l_valid or not pris_r_valid or not pris_total_valid:
-            print(
-                f"Invalid state: {curr_state} - Number of prisoners are not between 0 and {num_prisoners}"
-            )
-            return False
+            log = f"Invalid state: {curr_state} - Number of prisoners are not between 0 and {num_prisoners}"
+            print(log)
+            return False, log
 
         # Check the left side
         # Check if guards are present, and if so, check if there are more prisoners than guards
         if curr_state[0] > 0 and curr_state[0] < curr_state[2]:
-            print(
-                f"Invalid state: {curr_state} - Prisoners outnumber guards on left side"
-            )
-            return False
+            log = f"Invalid state: {curr_state} - Prisoners outnumber guards on left side"
+            print(log)
+            return False, log
 
         # Check the right side
         # Check if guards are present, and if so, check if there are more prisoners than guards
         if curr_state[1] > 0 and curr_state[1] < curr_state[3]:
-            print(
-                f"Invalid state: {curr_state} - Prisoners outnumber guards on right side"
-            )
-            return False
+            log = f"Invalid state: {curr_state} - Prisoners outnumber guards on right side"
+            print(log)
+            return False, log
 
         # If we get here, the state is valid
-        return True
+        log = f"Valid state: {curr_state} - This state is valid"
+        return True, log
 
     def get_next_states(
             curr_state: List[int]) -> List[List[int]]:
@@ -187,10 +185,13 @@ def get_mage_gpp_response(question: str) -> str:
         curr_state = curr_state.copy()
         valid_states = []
         invalid_states = []
+        log = ""
 
         # Check if the current state is valid
-        if not validate_state(curr_state):
-            return {"valid": valid_states, "invalid": invalid_states}
+        curr_valid, curr_log = validate_state(curr_state)
+        if not curr_valid:
+            log = log + " " + curr_log
+            return {"valid": valid_states, "invalid": invalid_states, "log":log}
 
         # Check each possible move
         for move in [
@@ -201,7 +202,8 @@ def get_mage_gpp_response(question: str) -> str:
             move_1_guard_1_prisoner,
         ]:
             new_state = move(curr_state)
-            valid = validate_state(new_state)
+            valid, valid_log = validate_state(new_state)
+            log = log + " " + valid_log
             if valid:
                 # If the new state is valid, add it to the list of valid states
                 valid_states.append(new_state)
@@ -210,7 +212,7 @@ def get_mage_gpp_response(question: str) -> str:
                 invalid_states.append(new_state)
 
         # Return the valid and invalid states
-        result = {"valid": valid_states, "invalid": invalid_states}
+        result = {"valid": valid_states, "invalid": invalid_states, "log": log}
         print(f"result: {result}")
         return result
 
@@ -266,6 +268,7 @@ def get_mage_gpp_response(question: str) -> str:
             for tool in data.required_action.submit_tool_outputs.tool_calls:
                 print(f'tool.function.arguments: {tool.function.arguments}')
                 if tool.function.name == "get_next_states":
+                    print("get_next_states function called")
                     if len(tool.function.arguments) < 3:
                         empty_args_error(tool)
                         continue
@@ -283,8 +286,10 @@ def get_mage_gpp_response(question: str) -> str:
                         # curr_state = args_values_list[0]
                     function_output = get_next_states(curr_state)
                     function_output = str(function_output)
+                    print(f"function_output: {function_output}")
                     tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
                 elif tool.function.name == "validate_state":
+                    print("validate_state function called")
                     if len(tool.function.arguments) < 3:
                         empty_args_error(tool)
                         continue
@@ -299,8 +304,10 @@ def get_mage_gpp_response(question: str) -> str:
                         continue
                         # args_values_list = list(args.values())
                         # curr_state = args_values_list[0]
-                    function_output = validate_state(curr_state)
+                    function_output, log = validate_state(curr_state)
                     function_output = str(function_output)
+                    function_output = function_output + " " + log
+                    print(f"function_output: {function_output}")
                     tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
 
             # Submit all tool_outputs at the same time
