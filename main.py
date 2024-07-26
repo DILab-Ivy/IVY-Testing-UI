@@ -5,13 +5,11 @@ import httpx
 from gpp_openai_assistant import get_mage_gpp_response
 
 
+# TODO: merge with db handling branch
+
 # Ensure environment variable is set
 if not os.getenv("MCM_URL"):
     raise ValueError("Please set the MCM_URL environment variable")
-
-# Initialize CSV Logger
-csv_logger = gr.CSVLogger()
-csv_path = pathlib.Path("flagged/log.csv")
 
 # MCM Response Function
 def get_mcm_response(question: str) -> str:
@@ -25,16 +23,6 @@ def get_mcm_response(question: str) -> str:
         timeout=timeout_secs.value,
     )
     return response.json()["response"]
-
-    # with client.beta.threads.runs.stream(
-    #     thread_id=thread.id,
-    #     assistant_id=ASSISTANT_ID,
-    #     event_handler=EventHandler(),
-    # ) as stream:
-    #     response = ""
-    #     for delta in stream.text_deltas:
-    #         response += delta.value
-    #     return response
 
 # Gradio Interface Setup
 with gr.Blocks() as demo:
@@ -119,33 +107,10 @@ with gr.Blocks() as demo:
                 history[-1][1] += character
                 yield history
 
-        #
-        # def get_response(history):
-        #     pass
-
-    # # Callbacks
-    # def on_submit_click(question, chatbot):
-    #     if chatbot == "MCM":
-    #         return get_mcm_response(question)
-    #     elif chatbot == "MAGE - GPP function calling experiment":
-    #         return get_mage_gpp_response(question)
-    #     return "Invalid selection"
-    #
-    #
-    # def on_clear_click():
-    #     return "", ""
-    #
-    #
     def on_flag_click(*args):
         if not args[0] and not args[1]:
             gr.Warning("No data to save!")
             return
-    #
-    #     csv_logger.flag(args)
-    #     gr.Info("Saved successfully!")
-
-
-    # TODO: get this working with multi-bot dropdowno ge
 
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
