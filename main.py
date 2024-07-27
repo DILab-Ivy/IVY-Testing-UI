@@ -183,7 +183,7 @@ with gr.Blocks() as ivy_main_page:
             value="Flag last response", variant="secondary", visible=IS_DEVELOPER_VIEW
         )
         download_btn = gr.Button(
-            label="Download Flagged Responses",
+            value="Download Flagged Responses",
             variant="secondary",
             visible=IS_DEVELOPER_VIEW,
         )
