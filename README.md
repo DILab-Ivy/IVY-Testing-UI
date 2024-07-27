@@ -4,26 +4,26 @@ IVY is an interactive application built with Gradio that communicates with the M
 
 ## Setup
 1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/ivy-chatbot.git
-   cd ivy-chatbot
-   ```
+        ```bash
+        git clone https://github.com/yourusername/ivy-chatbot.git
+        cd ivy-chatbot
+        ```
    
    2. **Create and activate a virtual environment (optional but recommended):**
-    ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-   ```
+        ```bash
+        python -m venv venv
+        source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+        ```
 
    3. **Install the required dependencies:**
-      ```bash
-pip install -r requirements.txt
-   ```
+        ```bash
+        pip install -r requirements.txt
+        ```
    
    4. **Run the application:**
       ```bash
-python main.py
-   ```
+        python main.py
+        ```
 
 ##Project Structure
 
