@@ -3,3 +3,5 @@ httpx
 python-dotenv
 boto3==1.26.7
 botocore==1.29.7
+fastapi
+starlette
