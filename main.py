@@ -42,7 +42,7 @@ CLIENT_ID = (
 CLIENT_SECRET = (
     os.getenv("COGNITO_LOCALHOST_CLIENT_SECRET")
     if ON_LOCALHOST
-    else os.get_env("COGNITO_PROD_CLIENT_SECRET")
+    else os.getenv("COGNITO_PROD_CLIENT_SECRET")
 )
 LOGIN_URL = (
     COGNITO_DOMAIN
@@ -241,13 +241,13 @@ with gr.Blocks() as ivy_main_page:
     def update_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
-        
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+
         # Update item in DynamoDB
         response = chat_history_table.update_item(
             Key={
-                'Username': user_id,
-                'Timestamp': timestamp,
+                "Username": user_id,
+                "Timestamp": timestamp,
             },
             UpdateExpression="SET Reaction = :reaction",
             ExpressionAttributeValues={":reaction": reaction},
@@ -303,29 +303,47 @@ with gr.Blocks() as ivy_main_page:
 
     def fetch_flagged_messages(user_id, session_id):
         response = chat_history_table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr('Username').eq(user_id) &
-                            boto3.dynamodb.conditions.Attr('SessionId').eq(session_id) &
-                            boto3.dynamodb.conditions.Attr('Reaction').eq('flagged')
+            FilterExpression=boto3.dynamodb.conditions.Attr("Username").eq(user_id)
+            & boto3.dynamodb.conditions.Attr("SessionId").eq(session_id)
+            & boto3.dynamodb.conditions.Attr("Reaction").eq("flagged")
         )
-        return response.get('Items', [])
+        return response.get("Items", [])
 
     def generate_csv(user_id, session_id):
         items = fetch_flagged_messages(user_id, session_id)
         if not items:
             return None
-        
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
-        temp_dir = tempfile.gettempdir()
-        filepath = os.path.join(temp_dir, f'{user_id}_{timestamp}_flagged.csv')
 
-        with open(filepath, mode='w', newline='') as file:
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, f"{user_id}_{timestamp}_flagged.csv")
+
+        with open(filepath, mode="w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(['Username', 'SessionId', 'Timestamp', 'Question', 'Response', 'Reaction'])
+            writer.writerow(
+                [
+                    "Username",
+                    "SessionId",
+                    "Timestamp",
+                    "Question",
+                    "Response",
+                    "Reaction",
+                ]
+            )
             for item in items:
-                writer.writerow([item['Username'], item['SessionId'], item['Timestamp'], item['Question'], item['Response'], item['Reaction']])
-        
+                writer.writerow(
+                    [
+                        item["Username"],
+                        item["SessionId"],
+                        item["Timestamp"],
+                        item["Question"],
+                        item["Response"],
+                        item["Reaction"],
+                    ]
+                )
+
         return filepath
-    
+
     def handle_download_click():
         filepath = generate_csv(username, session_id)
         return filepath if filepath else None
