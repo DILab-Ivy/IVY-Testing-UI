@@ -11,7 +11,7 @@ def find_path_between_two_states(start_state: List[int], goal_state: List[int]):
     while len(frontier) > 0:
         next_seq_to_explore = frontier.pop(0)
         curr_state = next_seq_to_explore[-1][1]
-        prev_move = next_seq_to_explore[-1][0]
+        # prev_move = next_seq_to_explore[-1][0]
         if curr_state in explored:
             continue
         else:
