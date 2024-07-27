@@ -360,7 +360,5 @@ with gr.Blocks() as evaluation_page:
     # Placeholder interface
     gr.Interface(lambda x: f"Hello {x}!", inputs="text", outputs="text")
 
-app = gr.mount_gradio_app(
-    app, ivy_main_page, path="/ask-ivy", allowed_paths=["flagged/", "commended/"]
-)
+app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy")
 app = gr.mount_gradio_app(app, evaluation_page, path="/evaluation")
