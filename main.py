@@ -1,11 +1,13 @@
 import os
 import pathlib
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import gradio as gr
 import httpx
 import boto3
+import csv
+import tempfile
 
 if not os.getenv("MCM_URL"):
     raise ValueError("Please set the MCM_URL environment variable")
@@ -31,6 +33,7 @@ def get_mcm_response(question: str) -> str:
         timeout=timeout_secs.value,
     )
     return response.json()["response"]
+
 
 #Gradio Interface Setup
 with gr.Blocks() as demo:
@@ -82,11 +85,8 @@ with gr.Blocks() as demo:
         clear = gr.Button(value="Clear", variant="stop")
     with gr.Row():
         flag_btn = gr.Button(value="Flag last response", variant="secondary")
-        download_btn = gr.Button(
-            value="Download Flagged Responses",
-            variant="secondary",
-            link="/file=flagged/log.csv",
-        )
+        download_btn = gr.DownloadButton(label="Download Flagged Responses", visible=True)
+    
     #Not integrated yet: Save Login data to dynamoDB
     def log_user_login(user_id, session_id):
         timestamp = time.time()
@@ -103,7 +103,7 @@ with gr.Blocks() as demo:
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
         timestamp = dt.strftime('%b-%d-%Y_%H:%M')
-        
+
         chat_data = {
             'Username': user_id,
             'SessionId': session_id,
@@ -131,13 +131,13 @@ with gr.Blocks() as demo:
     def update_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
         
         # Update item in DynamoDB
         response = chat_history_table.update_item(
             Key={
                 'Username': user_id,
-                'Timestamp': formatted_timestamp,
+                'Timestamp': timestamp,
             },
             UpdateExpression='SET Reaction = :reaction',
             ExpressionAttributeValues={
@@ -193,6 +193,35 @@ with gr.Blocks() as demo:
         else:
             log_disliked_response([[question, response]])
 
+    def fetch_flagged_messages(user_id, session_id):
+        response = chat_history_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('Username').eq(user_id) &
+                            boto3.dynamodb.conditions.Attr('SessionId').eq(session_id) &
+                            boto3.dynamodb.conditions.Attr('Reaction').eq('flagged')
+        )
+        return response.get('Items', [])
+
+    def generate_csv(user_id, session_id):
+        items = fetch_flagged_messages(user_id, session_id)
+        if not items:
+            return None
+        
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, f'{user_id}_{timestamp}_flagged.csv')
+
+        with open(filepath, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Username', 'SessionId', 'Timestamp', 'Question', 'Response', 'Reaction'])
+            for item in items:
+                writer.writerow([item['Username'], item['SessionId'], item['Timestamp'], item['Question'], item['Response'], item['Reaction']])
+        
+        return filepath
+    
+    def handle_download_click():
+        filepath = generate_csv(username, session_id)
+        return filepath if filepath else None
+
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
     ).success(get_response_from_ivy, chatbot, chatbot)
@@ -202,6 +231,11 @@ with gr.Blocks() as demo:
     chatbot.like(chat_liked_or_disliked, chatbot, None)
     clear.click(lambda: None, None, chatbot, queue=False)
     flag_btn.click(log_flagged_response, chatbot, None)
+    download_btn.click(
+        handle_download_click,
+        inputs=[],
+        outputs=[download_btn],
+    )
 
 #Launch the Application
 demo.queue()
