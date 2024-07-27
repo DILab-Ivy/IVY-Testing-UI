@@ -19,6 +19,35 @@ def get_mage_gpp_response(question: str) -> str:
         nonlocal response
         response += new_value
 
+    def find_path_between_two_states(start_state: List[int], goal_state: List[int]) -> str:
+        """
+        BFS to find sequence of legal moves to get from start_state to goal_state
+        """
+        explored = set()
+        frontier = [[([start_state.copy()], "start")]]
+        while len(frontier) > 0:
+            next_seq_to_explore = frontier.pop(0)
+            curr_state = next_seq_to_explore[-1][0]
+            prev_move = next_seq_to_explore[-1][1]
+            if curr_state in explored:
+                continue
+            else:
+                explored.add(curr_state)
+                if curr_state == goal_state:
+                    return f"Sequence between {start_state} and {goal_state} found: {next_seq_to_explore}"
+                else:
+                    result_dict = get_next_states(curr_state=curr_state)
+                    valid_states = result_dict["valid"]
+                    #TODO: update get_next_states to return moves in output dictionary
+                    moves = result_dict["moves"]
+                    if len(valid_states) > 0:
+                        for i, state in enumerate(valid_states):
+                            curr_sequence = next_seq_to_explore.copy()
+                            curr_sequence.append((state[i], moves[i]))
+                            frontier.append(curr_sequence)
+
+        return f"No sequence of legal moves found between {start_state} and {goal_state}"
+
     def validate_state(curr_state: List[int], num_guards: int = 3, num_prisoners: int = 3) -> bool:
         """
         Check if the state is valid and print reasons
@@ -191,7 +220,7 @@ def get_mage_gpp_response(question: str) -> str:
         curr_valid, curr_log = validate_state(curr_state)
         if not curr_valid:
             log = log + " " + curr_log
-            return {"valid": valid_states, "invalid": invalid_states, "log":log}
+            return {"valid": valid_states, "invalid": invalid_states, "log": log}
 
         # Check each possible move
         for move in [
@@ -261,7 +290,6 @@ def get_mage_gpp_response(question: str) -> str:
                 missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
                 print(missing_arg_error_message)
                 tool_outputs.append({"tool_call_id": tool.id, "output": missing_arg_error_message})
-
 
             tool_outputs = []
 
