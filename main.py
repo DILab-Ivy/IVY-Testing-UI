@@ -1,12 +1,13 @@
 import os
 import pathlib
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import gradio as gr
 import httpx
 import boto3
 import csv
+import tempfile
 
 if not os.getenv("MCM_URL"):
     raise ValueError("Please set the MCM_URL environment variable")
@@ -102,7 +103,7 @@ with gr.Blocks() as demo:
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
         timestamp = dt.strftime('%b-%d-%Y_%H:%M')
-        
+
         chat_data = {
             'Username': user_id,
             'SessionId': session_id,
@@ -130,13 +131,13 @@ with gr.Blocks() as demo:
     def update_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        formatted_timestamp = dt.strftime('%b-%d-%Y_%H:%M')
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
         
         # Update item in DynamoDB
         response = chat_history_table.update_item(
             Key={
                 'Username': user_id,
-                'Timestamp': formatted_timestamp,
+                'Timestamp': timestamp,
             },
             UpdateExpression='SET Reaction = :reaction',
             ExpressionAttributeValues={
@@ -205,8 +206,10 @@ with gr.Blocks() as demo:
         if not items:
             return None
         
-        filepath = f'flagged/{user_id}_{session_id}_flagged.csv'
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, f'{user_id}_{timestamp}_flagged.csv')
+
         with open(filepath, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Username', 'SessionId', 'Timestamp', 'Question', 'Response', 'Reaction'])
