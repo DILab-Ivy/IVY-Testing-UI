@@ -1,68 +1,43 @@
-import os
-import pathlib
 import time
 from datetime import datetime, timezone
 
 import gradio as gr
 import httpx
-import boto3
 import requests
 import base64
-import csv
-import tempfile
 import uvicorn
 
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-REQUIRED_ENV_VARS = ["COGNITO_LOCALHOST_CLIENT_SECRET", "COGNITO_PROD_CLIENT_SECRET"]
-for env_var in REQUIRED_ENV_VARS:
-    if not os.getenv(env_var):
-        raise ValueError(f"Please set the {env_var} environment variable")
-
-# If is_developer_view is True then there's additional functionalities available.
-IS_DEVELOPER_VIEW = True
-ON_LOCALHOST = False
-MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
-SKILL_NAME_TO_MCM_URL = {
-    "Classification": "https://classification.dilab-ivy.com/ivy/ask_question",
-    "Incremental Concept Learning": "https://icl.dilab-ivy.com/ivy/ask_question",
-    "Means End Analysis": "https://mea.dilab-ivy.com/ivy/ask_question",
-    "Semantic Networks": "https://gpp.dilab-ivy.com/ivy/ask_question",
-}
-
-COGNITO_DOMAIN = "https://ivy.auth.us-east-1.amazoncognito.com"
-URL_CODE = ""
-ACCESS_TOKEN = ""
-REDIRECT_URL = (
-    "http://localhost:8002/ask-ivy"
-    if ON_LOCALHOST
-    else "https://dev.dilab-ivy.com/ask-ivy"
+from chat_logging import (
+    log_chat_history,
+    generate_csv
 )
-CLIENT_ID = (
-    "60p8a9bvteiihrd8g89r5ggabi" if ON_LOCALHOST else "2d7ah9kttong2hdlt4olhtao4d"
-)
-CLIENT_SECRET = (
-    os.getenv("COGNITO_LOCALHOST_CLIENT_SECRET")
-    if ON_LOCALHOST
-    else os.getenv("COGNITO_PROD_CLIENT_SECRET")
-)
-LOGIN_URL = (
-    COGNITO_DOMAIN
-    + f"/login?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URL}"
-)
-GET_ACCESS_TOKEN_URL = COGNITO_DOMAIN + "/oauth2/token"
-GET_USER_INFO_URL = COGNITO_DOMAIN + "/oauth2/userInfo"
 
-USER_NAME = ""
-USERNAME = ""
-USER_EMAIL = ""
+from config import Config
+Config.check_required_env_vars()
 
+# Use Config class methods to get configuration values
+from config import Config
 
-# Initialize DynamoDB
-dynamodb = boto3.resource("dynamodb")
-login_table = dynamodb.Table("UserLogin")
-chat_history_table = dynamodb.Table("ChatHistory")
+# Use configuration values
+IS_DEVELOPER_VIEW = Config.IS_DEVELOPER_VIEW
+ON_LOCALHOST = Config.ON_LOCALHOST
+MCM_URL = Config.MCM_URL
+SKILL_NAME_TO_MCM_URL = Config.SKILL_NAME_TO_MCM_URL
+COGNITO_DOMAIN = Config.COGNITO_DOMAIN
+URL_CODE = Config.URL_CODE
+ACCESS_TOKEN = Config.ACCESS_TOKEN
+REDIRECT_URL = Config.REDIRECT_URL
+CLIENT_ID = Config.CLIENT_ID
+CLIENT_SECRET = Config.CLIENT_SECRET
+LOGIN_URL = Config.LOGIN_URL
+GET_ACCESS_TOKEN_URL = Config.GET_ACCESS_TOKEN_URL
+GET_USER_INFO_URL = Config.GET_USER_INFO_URL
+USER_NAME = Config.USER_NAME
+USERNAME = Config.USERNAME
+USER_EMAIL = Config.USER_EMAIL
 
 app = FastAPI()
 
@@ -201,62 +176,7 @@ with gr.Blocks() as ivy_main_page:
             return "An Error Occurred"
         return f"# Welcome to Ivy Chatbot, {USER_NAME}"
 
-    def log_user_login(user_id, session_id):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-        login_data = {
-            "Username": user_id,
-            "SessionId": session_id,
-            "Timestamp": timestamp,
-        }
-        login_table.put_item(Item=login_data)
-
-    def log_chat_history(user_id, session_id, question, response, reaction):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-
-        chat_data = {
-            "Username": user_id,
-            "SessionId": session_id,
-            "Timestamp": timestamp,
-            "Question": question,
-            "Response": response,
-            "Reaction": reaction,
-        }
-
-        # Check if item exists and update or put item
-        existing_item = chat_history_table.get_item(
-            Key={
-                "Username": user_id,
-                "Timestamp": timestamp,
-            }
-        )
-
-        if "Item" in existing_item:
-            update_chat_history(user_id, session_id, question, response, reaction)
-            print("Chat data updated successfully")
-        else:
-            chat_history_table.put_item(Item=chat_data)
-            print("Chat data logged successfully")
-
-    def update_chat_history(user_id, session_id, question, response, reaction):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-
-        # Update item in DynamoDB
-        response = chat_history_table.update_item(
-            Key={
-                "Username": user_id,
-                "Timestamp": timestamp,
-            },
-            UpdateExpression="SET Reaction = :reaction",
-            ExpressionAttributeValues={":reaction": reaction},
-            ReturnValues="UPDATED_NEW",
-        )
-
+    
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
 
@@ -303,47 +223,6 @@ with gr.Blocks() as ivy_main_page:
             log_commended_response([[question, response]])
         else:
             log_disliked_response([[question, response]])
-
-    def fetch_flagged_messages(user_id, session_id):
-        response = chat_history_table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr("Username").eq(user_id)
-            & boto3.dynamodb.conditions.Attr("SessionId").eq(session_id)
-            & boto3.dynamodb.conditions.Attr("Reaction").eq("flagged")
-        )
-        return response.get("Items", [])
-
-    def generate_csv(user_id, session_id):
-        items = fetch_flagged_messages(user_id, session_id)
-        if not items:
-            return None
-
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-        temp_dir = tempfile.gettempdir()
-        filepath = os.path.join(temp_dir, f"{user_id}_{timestamp}_flagged.csv")
-
-        with open(filepath, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(
-                [
-                    "Username",
-                    "Timestamp",
-                    "Question",
-                    "Response",
-                    "Reaction",
-                ]
-            )
-            for item in items:
-                writer.writerow(
-                    [
-                        item["Username"],
-                        item["Timestamp"],
-                        item["Question"],
-                        item["Response"],
-                        item["Reaction"],
-                    ]
-                )
-
-        return filepath
 
     def handle_download_click():
         filepath = generate_csv(USERNAME, ACCESS_TOKEN)
