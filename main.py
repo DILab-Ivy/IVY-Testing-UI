@@ -385,4 +385,4 @@ app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy")
 app = gr.mount_gradio_app(app, evaluation_page, path="/evaluation")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0")
+    uvicorn.run(app, host="0.0.0.0", port=8002)
