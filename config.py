@@ -18,7 +18,7 @@ class Config:
 
     # Define your configuration values
     IS_DEVELOPER_VIEW = True
-    ON_LOCALHOST = True
+    ON_LOCALHOST = False
     MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
     SKILL_NAME_TO_MCM_URL = {
         "Classification": "https://classification.dilab-ivy.com/ivy/ask_question",
