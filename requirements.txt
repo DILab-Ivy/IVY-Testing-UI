@@ -1,5 +1,10 @@
-gradio
-httpx
-python-dotenv
+gradio==4.26.0
+gradio_client==0.15.1
+httpx==0.26.0
+python-dotenv==1.0.1
+aiobotocore==2.5.2
 boto3==1.26.7
-botocore==1.29.7
+botocore==1.29.161
+fastapi==0.109.0
+fastapi-cli==0.0.4
+starlette==0.35.1
