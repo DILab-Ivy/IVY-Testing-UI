@@ -173,7 +173,7 @@ with gr.Blocks() as ivy_main_page:
         if not get_access_token_and_user_info(url_code):
             # (TODO): Redirect to Login page or display Error page
             return "An Error Occurred"
-        return f"# Welcome to Ivy Chatbot, {USER_NAME}"
+        return f"# Welcome to Ivy Chatbot, {config.USERNAME}"
 
     
     def update_user_message(user_message, history):
@@ -188,7 +188,7 @@ with gr.Blocks() as ivy_main_page:
             yield history
         # Log to DynamoDB every interaction here
         log_chat_history(
-            USERNAME, ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
+            config.USERNAME, config.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
         )
 
     def log_commended_response(history):
@@ -196,7 +196,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "liked")
+        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "liked")
         gr.Info("Saved successfully!")
 
     def log_disliked_response(history):
@@ -204,7 +204,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "disliked")
+        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "disliked")
         gr.Info("Saved successfully!")
 
     def log_flagged_response(history):
@@ -212,7 +212,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "flagged")
+        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "flagged")
         gr.Info("Saved successfully!")
 
     def chat_liked_or_disliked(history, data: gr.LikeData):
@@ -224,12 +224,11 @@ with gr.Blocks() as ivy_main_page:
             log_disliked_response([[question, response]])
 
     def handle_download_click():
-        filepath = generate_csv(USERNAME, ACCESS_TOKEN)
+        filepath = generate_csv(config.USERNAME, config.ACCESS_TOKEN)
         return filepath if filepath else None
 
     def update_skill(skill_name):
-        global MCM_URL
-        MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
+        config.MCM_URL = config.SKILL_NAME_TO_MCM_URL[skill_name]
         return []
 
     ivy_main_page.load(on_page_load, None, [welcome_msg])
