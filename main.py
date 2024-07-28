@@ -18,9 +18,6 @@ from chat_logging import (
 from config import Config
 Config.check_required_env_vars()
 
-# Use Config class methods to get configuration values
-from config import Config
-
 # Use configuration values
 IS_DEVELOPER_VIEW = Config.IS_DEVELOPER_VIEW
 ON_LOCALHOST = Config.ON_LOCALHOST
@@ -52,9 +49,9 @@ def get_access_token_and_user_info(url_code):
     URL_CODE = url_code
     access_token_data = {
         "grant_type": "authorization_code",
-        "client_id": config.CLIENT_ID,
+        "client_id": Config.CLIENT_ID,
         "code": URL_CODE,
-        "redirect_uri": config.REDIRECT_URL,
+        "redirect_uri": Config.REDIRECT_URL,
     }
     access_token_headers = {
         "Authorization": "Basic "
@@ -73,24 +70,18 @@ def get_access_token_and_user_info(url_code):
     try:
         # Get Access Token
         response = requests.post(
-            GET_ACCESS_TOKEN_URL, data=access_token_data, headers=access_token_headers
+            Config.GET_ACCESS_TOKEN_URL, data=access_token_data, headers=access_token_headers
         )
         access_token = response.json()["access_token"]
-        global ACCESS_TOKEN
-        ACCESS_TOKEN = access_token
+        Config.ACCESS_TOKEN = access_token
 
         # Get User Info
         response = requests.get(
-            GET_USER_INFO_URL, headers=get_user_info_header(access_token)
+            Config.GET_USER_INFO_URL, headers=get_user_info_header(access_token)
         ).json()
-        global USER_NAME
-        global USERNAME
-        global USER_EMAIL
-        USER_NAME, USERNAME, USER_EMAIL = (
-            response["name"],
-            response["username"],
-            response["email"],
-        )
+        Config.USER_NAME = response["name"]
+        Config.USERNAME = response["username"]
+        Config.USER_EMAIL = response["email"]
         return True
     except Exception as e:
         print(str(e))
@@ -101,7 +92,7 @@ def get_access_token_and_user_info(url_code):
 def get_mcm_response(question: str) -> str:
     try:
         response = httpx.post(
-            config.MCM_URL,
+            Config.MCM_URL,
             json={"question": question, "api_key": mcm_api_key.value, "Episodic_Knowledge": {}},
             timeout=timeout_secs.value,
         )
@@ -173,7 +164,7 @@ with gr.Blocks() as ivy_main_page:
         if not get_access_token_and_user_info(url_code):
             # (TODO): Redirect to Login page or display Error page
             return "An Error Occurred"
-        return f"# Welcome to Ivy Chatbot, {config.USERNAME}"
+        return f"# Welcome to Ivy Chatbot, {Config.USERNAME}"
 
     
     def update_user_message(user_message, history):
@@ -188,7 +179,7 @@ with gr.Blocks() as ivy_main_page:
             yield history
         # Log to DynamoDB every interaction here
         log_chat_history(
-            config.USERNAME, config.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
+            Config.USERNAME, Config.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
         )
 
     def log_commended_response(history):
@@ -196,7 +187,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "liked")
+        log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "liked")
         gr.Info("Saved successfully!")
 
     def log_disliked_response(history):
@@ -204,7 +195,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "disliked")
+        log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "disliked")
         gr.Info("Saved successfully!")
 
     def log_flagged_response(history):
@@ -212,7 +203,7 @@ with gr.Blocks() as ivy_main_page:
             return
         response = history[-1][1]
         question = history[-1][0]
-        log_chat_history(config.USERNAME, config.ACCESS_TOKEN, question, response, "flagged")
+        log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "flagged")
         gr.Info("Saved successfully!")
 
     def chat_liked_or_disliked(history, data: gr.LikeData):
@@ -224,11 +215,11 @@ with gr.Blocks() as ivy_main_page:
             log_disliked_response([[question, response]])
 
     def handle_download_click():
-        filepath = generate_csv(config.USERNAME, config.ACCESS_TOKEN)
+        filepath = generate_csv(Config.USERNAME, Config.ACCESS_TOKEN)
         return filepath if filepath else None
 
     def update_skill(skill_name):
-        config.MCM_URL = config.SKILL_NAME_TO_MCM_URL[skill_name]
+        Config.MCM_URL = Config.SKILL_NAME_TO_MCM_URL[skill_name]
         return []
 
     ivy_main_page.load(on_page_load, None, [welcome_msg])
