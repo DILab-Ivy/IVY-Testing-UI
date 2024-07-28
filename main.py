@@ -35,7 +35,9 @@ COGNITO_DOMAIN = "https://ivy.auth.us-east-1.amazoncognito.com"
 URL_CODE = ""
 ACCESS_TOKEN = ""
 REDIRECT_URL = (
-    "http://localhost:8000/ask-ivy" if ON_LOCALHOST else "https://dev.dilab-ivy.com"
+    "http://localhost:8002/ask-ivy"
+    if ON_LOCALHOST
+    else "https://dev.dilab-ivy.com/ask-ivy"
 )
 CLIENT_ID = (
     "60p8a9bvteiihrd8g89r5ggabi" if ON_LOCALHOST else "2d7ah9kttong2hdlt4olhtao4d"
