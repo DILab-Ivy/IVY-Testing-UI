@@ -187,10 +187,8 @@ with gr.Blocks() as ivy_main_page:
         flag_btn = gr.Button(
             value="Flag last response", variant="secondary", visible=IS_DEVELOPER_VIEW
         )
-        download_btn = gr.Button(
-            value="Download Flagged Responses",
-            variant="secondary",
-            visible=IS_DEVELOPER_VIEW,
+        download_btn = gr.DownloadButton(
+            value="Download Flagged Responses", variant="secondary", visible=IS_DEVELOPER_VIEW
         )
 
     def on_page_load(request: gr.Request):
@@ -206,7 +204,7 @@ with gr.Blocks() as ivy_main_page:
     def log_user_login(user_id, session_id):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        timestamp = dt.strftime("%b-%d-%Y_%H:%M")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
         login_data = {
             "Username": user_id,
             "SessionId": session_id,
@@ -217,7 +215,7 @@ with gr.Blocks() as ivy_main_page:
     def log_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        timestamp = dt.strftime("%b-%d-%Y_%H:%M")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
 
         chat_data = {
             "Username": user_id,
@@ -246,7 +244,7 @@ with gr.Blocks() as ivy_main_page:
     def update_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
 
         # Update item in DynamoDB
         response = chat_history_table.update_item(
@@ -319,7 +317,7 @@ with gr.Blocks() as ivy_main_page:
         if not items:
             return None
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
         temp_dir = tempfile.gettempdir()
         filepath = os.path.join(temp_dir, f"{user_id}_{timestamp}_flagged.csv")
 
@@ -328,7 +326,6 @@ with gr.Blocks() as ivy_main_page:
             writer.writerow(
                 [
                     "Username",
-                    "SessionId",
                     "Timestamp",
                     "Question",
                     "Response",
@@ -339,7 +336,6 @@ with gr.Blocks() as ivy_main_page:
                 writer.writerow(
                     [
                         item["Username"],
-                        item["SessionId"],
                         item["Timestamp"],
                         item["Question"],
                         item["Response"],
