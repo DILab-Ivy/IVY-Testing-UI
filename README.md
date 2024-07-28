@@ -34,7 +34,7 @@ Interactive Video (IVY) is an interactive chatbot Agent built with Gradio that c
 
 - **main.py:** The main application file that sets up the Gradio interface and handles user interactions.
 - **requirements.txt:** A list of Python dependencies required for the project.
-- ** test_scripts** A directory containing testing scripts for local development and sanity checks upon deployment.
+- **/test_scripts** A directory containing testing scripts for local development and sanity checks upon deployment.
 
 ## Notes
 
