@@ -52,9 +52,9 @@ def get_access_token_and_user_info(url_code):
     URL_CODE = url_code
     access_token_data = {
         "grant_type": "authorization_code",
-        "client_id": CLIENT_ID,
+        "client_id": config.CLIENT_ID,
         "code": URL_CODE,
-        "redirect_uri": REDIRECT_URL,
+        "redirect_uri": config.REDIRECT_URL,
     }
     access_token_headers = {
         "Authorization": "Basic "
@@ -99,17 +99,16 @@ def get_access_token_and_user_info(url_code):
 
 # Sends a POST request to the MCM, Returns response
 def get_mcm_response(question: str) -> str:
-    response = httpx.post(
-        MCM_URL,
-        json={
-            "question": question,
-            "api_key": mcm_api_key.value,
-            "Episodic_Knowledge": {},
-        },
-        timeout=timeout_secs.value,
-    )
-    return response.json()["response"]
-
+    try:
+        response = httpx.post(
+            config.MCM_URL,
+            json={"question": question, "api_key": mcm_api_key.value, "Episodic_Knowledge": {}},
+            timeout=timeout_secs.value,
+        )
+        return response.json().get("response", "")
+    except httpx.RequestError as e:
+        print(f"HTTP request failed: {e}")
+        return ""
 
 # Gradio Interface Setup
 with gr.Blocks() as ivy_main_page:
