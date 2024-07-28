@@ -347,7 +347,7 @@ with gr.Blocks() as ivy_main_page:
         return filepath
 
     def handle_download_click():
-        filepath = generate_csv(username, session_id)
+        filepath = generate_csv(USERNAME, ACCESS_TOKEN)
         return filepath if filepath else None
 
     def update_skill(skill_name):
