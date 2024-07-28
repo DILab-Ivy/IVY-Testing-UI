@@ -10,6 +10,7 @@ import requests
 import base64
 import csv
 import tempfile
+import uvicorn
 
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
@@ -382,3 +383,6 @@ with gr.Blocks() as evaluation_page:
 
 app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy")
 app = gr.mount_gradio_app(app, evaluation_page, path="/evaluation")
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0")
