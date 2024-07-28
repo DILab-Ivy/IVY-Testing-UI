@@ -7,15 +7,15 @@ def find_path_between_two_states(start_state: List[int], goal_state: List[int]):
     BFS to find sequence of legal moves to get from start_state to goal_state
     """
     explored = set()
-    frontier = [[([start_state.copy()], "start")]]
+    frontier = [[("start", start_state)]]
     while len(frontier) > 0:
         next_seq_to_explore = frontier.pop(0)
         curr_state = next_seq_to_explore[-1][1]
         # prev_move = next_seq_to_explore[-1][0]
-        if curr_state in explored:
+        if tuple(curr_state) in explored:
             continue
         else:
-            explored.add(curr_state)
+            explored.add(tuple(curr_state))
             if curr_state == goal_state:
                 print(f"Sequence between {start_state} and {goal_state} found: {next_seq_to_explore}")
                 return next_seq_to_explore
@@ -27,7 +27,7 @@ def find_path_between_two_states(start_state: List[int], goal_state: List[int]):
                 if len(valid_states) > 0:
                     for i, state in enumerate(valid_states):
                         curr_sequence = next_seq_to_explore.copy()
-                        curr_sequence.append((moves[i], state[i]))
+                        curr_sequence.append((moves[i], state))
                         frontier.append(curr_sequence)
 
     return f"No sequence of legal moves found between {start_state} and {goal_state}"
@@ -200,13 +200,14 @@ def get_next_states(
     curr_state = curr_state.copy()
     valid_states = []
     invalid_states = []
+    valid_moves = []
     log = ""
 
     # Check if the current state is valid
     curr_valid, curr_log = validate_state(curr_state)
     if not curr_valid:
         log = log + " " + curr_log
-        return {"valid": valid_states, "invalid": invalid_states, "log": log}
+        return {"valid": valid_states, "moves": valid_moves, "invalid": invalid_states, "log": log}
 
     # Check each possible move
     for move in [
@@ -222,11 +223,12 @@ def get_next_states(
         if valid:
             # If the new state is valid, add it to the list of valid states
             valid_states.append(new_state)
+            valid_moves.append(move.__name__)
         else:
             # If the new state is invalid, add it to the list of invalid states
             invalid_states.append(new_state)
 
     # Return the valid and invalid states
-    result = {"valid": valid_states, "invalid": invalid_states, "log": log}
+    result = {"valid": valid_states, "moves": valid_moves, "invalid": invalid_states, "log": log}
     print(f"result: {result}")
     return result
