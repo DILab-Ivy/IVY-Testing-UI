@@ -98,6 +98,8 @@ def get_access_token_and_user_info(url_code):
             GET_ACCESS_TOKEN_URL, data=access_token_data, headers=access_token_headers
         )
         access_token = response.json()["access_token"]
+        global ACCESS_TOKEN
+        ACCESS_TOKEN = access_token
 
         # Get User Info
         response = requests.get(
