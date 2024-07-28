@@ -22,7 +22,6 @@ def find_path_between_two_states(start_state: List[int], goal_state: List[int]):
             else:
                 result_dict = get_next_states(curr_state=curr_state)
                 valid_states = result_dict["valid"]
-                # TODO: update get_next_states to return moves in output dictionary
                 moves = result_dict["moves"]
                 if len(valid_states) > 0:
                     for i, state in enumerate(valid_states):
