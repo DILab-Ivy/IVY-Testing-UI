@@ -384,7 +384,9 @@ with gr.Blocks() as evaluation_page:
     gr.Interface(lambda x: f"Hello {x}!", inputs="text", outputs="text")
 
 app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy", root_path="/ask-ivy")
-app = gr.mount_gradio_app(app, evaluation_page, path="/evaluation")
+app = gr.mount_gradio_app(
+    app, evaluation_page, path="/evaluation", root_path="/evaluation"
+)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8002)
