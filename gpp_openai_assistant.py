@@ -112,6 +112,28 @@ def get_mage_gpp_response(question: str) -> str:
                     function_output = function_output + " " + log
                     print(f"function_output: {function_output}")
                     tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+                elif tool.function.name == "find_path_between_two_states":
+                    print("find_path_between_two_states function called")
+                    if len(tool.function.arguments) < 3:
+                        empty_args_error(tool)
+                        continue
+                    # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
+                    args = ast.literal_eval(tool.function.arguments)
+                    try:
+                        start_state = args["start_state"]
+                        goal_state = args["goal_state"]
+                    except KeyError:
+                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'start_state' and 'goal_state' parameters"
+                        print(error_message)
+                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+                        continue
+                        # args_values_list = list(args.values())
+                        # curr_state = args_values_list[0]
+                    function_output = find_path_between_two_states(start_state, goal_state)
+                    function_output = str(function_output)
+                    # function_output = function_output + " " + log
+                    print(f"function_output: {function_output}")
+                    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
 
             # Submit all tool_outputs at the same time
             self.submit_tool_outputs(tool_outputs)
