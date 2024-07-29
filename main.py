@@ -116,11 +116,25 @@ def get_access_token_and_user_info(url_code):
             response["username"],
             response["email"],
         )
+
+        # Log user login in DynamoDB
+        log_user_login(USERNAME, ACCESS_TOKEN)
+
         return True
     except Exception as e:
         print(str(e))
         return False
 
+def log_user_login(user_id, session_id):
+        timestamp = time.time()
+        dt = datetime.fromtimestamp(timestamp)
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
+        login_data = {
+            "Username": user_id,
+            "SessionId": session_id,
+            "Timestamp": timestamp,
+        }
+        login_table.put_item(Item=login_data)
 
 # Sends a POST request to the MCM, Returns response
 def get_mcm_response(question: str) -> str:
@@ -200,17 +214,6 @@ with gr.Blocks() as ivy_main_page:
             # (TODO): Redirect to Login page or display Error page
             return "An Error Occurred"
         return f"# Welcome to Ivy Chatbot, {USER_NAME}"
-
-    def log_user_login(user_id, session_id):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-        login_data = {
-            "Username": user_id,
-            "SessionId": session_id,
-            "Timestamp": timestamp,
-        }
-        login_table.put_item(Item=login_data)
 
     def log_chat_history(user_id, session_id, question, response, reaction):
         timestamp = time.time()
