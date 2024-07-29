@@ -156,7 +156,7 @@ def get_mage_gpp_response(question: str) -> str:
     # ASSISTANT_ID = "asst_KuvzrM2XDMLGAke8qknm1Xmt" #V10
     # ASSISTANT_ID = "asst_2r1rHMIpTsnB9lJR1dYPGZOm" #v11
     # ASSISTANT_ID = "asst_Hh9KFq4TgDdijln6CyTZgIlz" #v15
-    ASSISTANT_ID = "asst_eOuTXleCfBYm0gfqYumhDfyK" #V16 tmk_str
+    ASSISTANT_ID = "asst_IPCwpbLO1TVVhZgoEUpeyL8c" #V16 tmk_str
 
     # Load the existing assistant
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
