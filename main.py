@@ -59,8 +59,8 @@ with gr.Blocks() as demo:
 
     # Chatbot Selection
     chatbot_selector = gr.Dropdown(
-        choices=["MCM", "MAGE - GPP function calling experiment"],
-        value="MAGE - GPP function calling experiment",
+        choices=["MCM", "MAGE - Episodic Query demo"],
+        value="MAGE - Episodic Query demo",
         label="Select Chatbot",
         interactive=True
     )
@@ -100,7 +100,7 @@ with gr.Blocks() as demo:
             for character in response:
                 history[-1][1] += character
                 yield history
-        elif chatbot_selector == "MAGE - GPP function calling experiment":
+        elif chatbot_selector == "MAGE - Episodic Query demo":
             history[-1][1] = ""
             response_generator = get_mage_gpp_response(history[-1][0])
             for character in response_generator:
