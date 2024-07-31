@@ -30,6 +30,3 @@ class TestFindPathBetweenTwoStates(unittest.TestCase):
 
         result = gpp_solving_functions.find_path_between_two_states(start_state, goal_state)
         self.assertEqual(result, expected_path)
-
-        [3, 0, 2, 1, 0]
-        [0, 3, 0, 3, 0]
