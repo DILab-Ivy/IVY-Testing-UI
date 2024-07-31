@@ -27,7 +27,7 @@ def get_mcm_response(question: str) -> str:
 # Gradio Interface Setup
 with gr.Blocks() as demo:
     # Title
-    gr.Markdown("# Ivy Chatbot")
+    gr.Markdown("# Ivy Virtual TA")
     # Settings
     with gr.Accordion("Settings", open=False):
         # MCM Settings
@@ -61,7 +61,7 @@ with gr.Blocks() as demo:
     chatbot_selector = gr.Dropdown(
         choices=["MCM", "MAGE - Episodic Query demo"],
         value="MAGE - Episodic Query demo",
-        label="Select Chatbot",
+        label="Select Agent",
         interactive=True
     )
 
