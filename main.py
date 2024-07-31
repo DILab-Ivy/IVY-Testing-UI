@@ -438,31 +438,6 @@ with gr.Blocks(
                     )
         goto_askivy_page = gr.Button(value="Ask Ivy", link="/ask-ivy", scale=0.5)
 
-    def get_eval_dot_html(num, color_style):
-        return f"""<div class="dot {color_style}">{num}</div>"""
-
-    def create_progress_indicator(current_question):
-        progress_html = """
-        <div class="top-container">
-            <div>
-                <div class="progress-text">Evaluation Progress</div>
-                <div class="dots">
-                    %s
-                </div>
-            </div>
-        </div>"""
-        progress_dots_html = ""
-        for i in range(15):
-            if i < current_question:
-                style = "green-dot"
-            elif i > current_question:
-                style = "red-dot"
-            else:
-                style = "yellow-dot"
-            progress_dots_html += get_eval_dot_html(i + 1, style)
-        progress_html = progress_html % progress_dots_html
-        return progress_html
-
     progress_bar = gr.HTML()
 
     with gr.Row():
@@ -481,22 +456,6 @@ with gr.Blocks(
         interactive=False,
         scale=1,
         lines=5,
-    )
-
-    submit_question_button.click(get_mcm_response, question_text, response_text)
-
-    def skip_eval_question():
-        global EVALUATION_QUESTIONS
-        global EVALUATION_QUESTION_NUM
-        EVALUATION_QUESTION_NUM += 1
-        return [
-            create_progress_indicator(EVALUATION_QUESTION_NUM),
-            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
-            "",
-        ]
-
-    skip_question_button.click(
-        skip_eval_question, [], [progress_bar, question_text, response_text]
     )
 
     def get_metric_name(metric_name):
@@ -575,6 +534,73 @@ with gr.Blocks(
         clear_button = gr.Button(value="Clear Rating", variant="stop")
         submit_rating_button = gr.Button(value="Next Question", variant="primary")
 
+    def get_eval_dot_html(num, color_style):
+        return f"""<div class="dot {color_style}">{num}</div>"""
+
+    def create_progress_indicator(current_question):
+        progress_html = """
+        <div class="top-container">
+            <div>
+                <div class="progress-text">Evaluation Progress</div>
+                <div class="dots">
+                    %s
+                </div>
+            </div>
+        </div>"""
+        progress_dots_html = ""
+        for i in range(len(EVALUATION_QUESTIONS)):
+            if i < current_question:
+                style = "green-dot"
+            elif i > current_question:
+                style = "red-dot"
+            else:
+                style = "yellow-dot"
+            progress_dots_html += get_eval_dot_html(i + 1, style)
+        progress_html = progress_html % progress_dots_html
+        return progress_html
+
+    submit_question_button.click(get_mcm_response, question_text, response_text)
+
+    def get_submit_rating_btn():
+        if EVALUATION_QUESTION_NUM == len(EVALUATION_QUESTIONS) - 1:
+            return gr.Button(
+                value="Submit and Finish Evaluation",
+                variant="primary",
+                link="/ask-ivy",
+            )
+        else:
+            return submit_rating_button
+
+    def get_skip_question_btn():
+        if EVALUATION_QUESTION_NUM == len(EVALUATION_QUESTIONS) - 1:
+            return gr.Button(value="Skip Question", interactive=False)
+        else:
+            return skip_question_button
+
+    def skip_eval_question():
+        global EVALUATION_QUESTIONS
+        global EVALUATION_QUESTION_NUM
+        EVALUATION_QUESTION_NUM += 1
+        return [
+            create_progress_indicator(EVALUATION_QUESTION_NUM),
+            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
+            "",
+            get_submit_rating_btn(),
+            get_skip_question_btn(),
+        ]
+
+    skip_question_button.click(
+        skip_eval_question,
+        [],
+        [
+            progress_bar,
+            question_text,
+            response_text,
+            submit_rating_button,
+            skip_question_button,
+        ],
+    )
+
     clear_evaluation_rating_js = """
         function clear_selection() {
             selections = document.querySelectorAll('input[type="radio"]')
@@ -623,6 +649,8 @@ with gr.Blocks(
             create_progress_indicator(EVALUATION_QUESTION_NUM),
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
             "",
+            get_submit_rating_btn(),
+            get_skip_question_btn(),
         ]
 
     submit_rating_button_js = """
@@ -643,7 +671,13 @@ with gr.Blocks(
     submit_rating_button.click(
         submit_rating_clear_update_question,
         inputs=[response_text],
-        outputs=[progress_bar, question_text, response_text],
+        outputs=[
+            progress_bar,
+            question_text,
+            response_text,
+            submit_rating_button,
+            skip_question_button,
+        ],
         js=submit_rating_button_js,
     )
 
