@@ -14,7 +14,8 @@ import os
 
 
 # Initialize DynamoDB
-dynamodb = boto3.resource("dynamodb")
+# dynamodb = boto3.resource("dynamodb")
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 login_table = dynamodb.Table("UserLogin")
 chat_history_table = dynamodb.Table("ChatHistory")
 
