@@ -17,7 +17,7 @@ def check_required_env_vars():
 # Define your configuration values
 IS_DEVELOPER_VIEW = True
 ON_LOCALHOST = False
-MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
+
 SKILL_NAME_TO_MCM_URL = {
     "Classification": "https://classification.dilab-ivy.com/ivy/ask_question",
     "Incremental Concept Learning": "https://icl.dilab-ivy.com/ivy/ask_question",
@@ -25,8 +25,6 @@ SKILL_NAME_TO_MCM_URL = {
     "Semantic Networks": "https://gpp.dilab-ivy.com/ivy/ask_question",
 }
 COGNITO_DOMAIN = "https://ivy.auth.us-east-1.amazoncognito.com"
-URL_CODE = ""
-ACCESS_TOKEN = ""
 REDIRECT_URL = (
     "http://localhost:8002/ask-ivy"
     if ON_LOCALHOST

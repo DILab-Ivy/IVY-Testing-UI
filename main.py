@@ -17,20 +17,14 @@ from chat_logging import log_user_login, log_chat_history, update_chat_history, 
 from constants import (
     IS_DEVELOPER_VIEW,
     ON_LOCALHOST,
-    MCM_URL,
     SKILL_NAME_TO_MCM_URL,
     COGNITO_DOMAIN,
-    URL_CODE,
-    ACCESS_TOKEN,
     REDIRECT_URL,
     CLIENT_ID,
     CLIENT_SECRET,
     LOGIN_URL,
     GET_ACCESS_TOKEN_URL,
-    GET_USER_INFO_URL,
-    USER_NAME,
-    USERNAME,
-    USER_EMAIL
+    GET_USER_INFO_URL
 )
 
 MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
