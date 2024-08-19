@@ -221,6 +221,7 @@ with gr.Blocks() as ivy_main_page:
         return filepath if filepath else None
 
     def update_skill(skill_name):
+        global MCM_URL
         MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
         return []
 
