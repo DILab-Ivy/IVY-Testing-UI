@@ -10,10 +10,8 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-from chat_logging import (
-    log_chat_history,
-    generate_csv
-)
+from chat_logging import log_user_login, log_chat_history, update_chat_history, fetch_flagged_messages, generate_csv
+
 
 
 from constants import (
@@ -71,15 +69,25 @@ def get_access_token_and_user_info(url_code):
             GET_ACCESS_TOKEN_URL, data=access_token_data, headers=access_token_headers
         )
         access_token = response.json()["access_token"]
+        global ACCESS_TOKEN
         ACCESS_TOKEN = access_token
 
         # Get User Info
         response = requests.get(
             GET_USER_INFO_URL, headers=get_user_info_header(access_token)
         ).json()
-        USER_NAME = response["name"]
-        USERNAME = response["username"]
-        USER_EMAIL = response["email"]
+        global USER_NAME
+        global USERNAME
+        global USER_EMAIL
+        USER_NAME, USERNAME, USER_EMAIL = (
+            response["name"],
+            response["username"],
+            response["email"],
+        )
+
+        # Log user login in DynamoDB
+        log_user_login(USERNAME, ACCESS_TOKEN)
+
         return True
     except Exception as e:
         print(str(e))
