@@ -14,11 +14,13 @@ import os
 
 
 # Initialize DynamoDB
-# dynamodb = boto3.resource("dynamodb")
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 login_table = dynamodb.Table("UserLogin")
 chat_history_table = dynamodb.Table("ChatHistory")
 
+####################################################################################
+# Logging User Sign-in to UserLogin DB
+####################################################################################
 def log_user_login(user_id, session_id):
         timestamp = time.time()
         dt = datetime.fromtimestamp(timestamp)
@@ -29,6 +31,10 @@ def log_user_login(user_id, session_id):
             "Timestamp": timestamp,
         }
         login_table.put_item(Item=login_data)
+
+####################################################################################
+# Logging and Updating Chat History to ChatHistory DB
+####################################################################################
 
 def log_chat_history(user_id, session_id, question, response, reaction):
     timestamp = time.time()
@@ -86,6 +92,10 @@ def fetch_flagged_messages(user_id, session_id):
             & boto3.dynamodb.conditions.Attr("Reaction").eq("flagged")
         )
         return response.get("Items", [])
+
+####################################################################################
+# Generate CSV Files from fetched flagged message in DynamoDB
+####################################################################################
 
 def generate_csv(user_id, session_id):
     items = fetch_flagged_messages(user_id, session_id)
