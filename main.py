@@ -10,8 +10,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-from chat_logging import log_user_login, log_chat_history, update_chat_history, fetch_flagged_messages, generate_csv
-
+from chat_logging import *
 
 
 from constants import (
@@ -26,6 +25,7 @@ from constants import (
     GET_ACCESS_TOKEN_URL,
     GET_USER_INFO_URL
 )
+
 
 MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
 
@@ -65,24 +65,20 @@ def get_access_token_and_user_info(url_code):
             GET_ACCESS_TOKEN_URL, data=access_token_data, headers=access_token_headers
         )
         access_token = response.json()["access_token"]
-        global ACCESS_TOKEN
-        ACCESS_TOKEN = access_token
+        # Update Access token in constants/config file 
+        Config.ACCESS_TOKEN = access_token 
 
         # Get User Info
         response = requests.get(
             GET_USER_INFO_URL, headers=get_user_info_header(access_token)
         ).json()
-        global USER_NAME
-        global USERNAME
-        global USER_EMAIL
-        USER_NAME, USERNAME, USER_EMAIL = (
-            response["name"],
-            response["username"],
-            response["email"],
-        )
+
+        # Update User Info in constants/config file 
+        Config.USERNAME = response["username"]
+        Config.USER_NAME = response["name"]
 
         # Log user login in DynamoDB
-        log_user_login(USERNAME, ACCESS_TOKEN)
+        log_user_login(Config.USERNAME, Config.ACCESS_TOKEN)
 
         return True
     except Exception as e:
@@ -166,7 +162,7 @@ with gr.Blocks() as ivy_main_page:
         if not get_access_token_and_user_info(url_code):
             # (TODO): Redirect to Login page or display Error page
             return "An Error Occurred"
-        return f"# Welcome to Ivy Chatbot, {USER_NAME}"
+        return f"# Welcome to Ivy Chatbot, {Config.USER_NAME}"
 
     
     def update_user_message(user_message, history):
@@ -181,43 +177,11 @@ with gr.Blocks() as ivy_main_page:
             yield history
         # Log to DynamoDB every interaction here
         log_chat_history(
-            USERNAME, ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
+            Config.USERNAME, Config.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
         )
 
-    def log_commended_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "liked")
-        gr.Info("Saved successfully!")
-
-    def log_disliked_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "disliked")
-        gr.Info("Saved successfully!")
-
-    def log_flagged_response(history):
-        if len(history) == 0:
-            return
-        response = history[-1][1]
-        question = history[-1][0]
-        log_chat_history(USERNAME, ACCESS_TOKEN, question, response, "flagged")
-        gr.Info("Saved successfully!")
-
-    def chat_liked_or_disliked(history, data: gr.LikeData):
-        question = history[data.index[0]][0]
-        response = history[data.index[0]][1]
-        if data.liked:
-            log_commended_response([[question, response]])
-        else:
-            log_disliked_response([[question, response]])
-
     def handle_download_click():
-        filepath = generate_csv(USERNAME, ACCESS_TOKEN)
+        filepath = generate_csv(Config.USERNAME, Config.ACCESS_TOKEN)
         return filepath if filepath else None
 
     def update_skill(skill_name):

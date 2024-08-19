@@ -1,11 +1,12 @@
 #####################################################################################################################
 # Description:
 # The config.py module defines the configuration settings and constants.
-# It encapsulates environment variables, URL endpoints, and other configuration variables.
+# Class Config is used so that other modules are able to 
+#   Usage: (1) Import: from constants import Config
+#          (2) Call by: Config.ACCESS_TOKEN, Config.USERNAME 
 # The module also includes validation for required environment variables.
 #####################################################################################################################
 import os
-print(os.environ)
 REQUIRED_ENV_VARS = ["COGNITO_LOCALHOST_CLIENT_SECRET", "COGNITO_PROD_CLIENT_SECRET"]
 
 def check_required_env_vars():
@@ -44,6 +45,17 @@ LOGIN_URL = (
 )
 GET_ACCESS_TOKEN_URL = COGNITO_DOMAIN + "/oauth2/token"
 GET_USER_INFO_URL = COGNITO_DOMAIN + "/oauth2/userInfo"
+
+class Config:
+    USERNAME = ""
+    USER_NAME = ""
+    ACCESS_TOKEN = ""
+
+    @classmethod
+    def set_user_info(cls, username, user_name, access_token):
+        cls.USERNAME = username
+        cls.USER_NAME = user_name
+        cls.ACCESS_TOKEN = access_token
 
 # Check environment variables
 check_required_env_vars()

@@ -11,6 +11,10 @@ import boto3
 import csv
 import tempfile
 import os
+import gradio as gr
+
+# Access configuration file 
+from constants import Config
 
 
 # Initialize DynamoDB
@@ -80,6 +84,42 @@ def update_chat_history(user_id, session_id, question, response, reaction):
         ExpressionAttributeValues={":reaction": reaction},
         ReturnValues="UPDATED_NEW",
     )
+
+####################################################################################
+# Handling Reaction to Responses
+####################################################################################
+
+def log_commended_response(history):
+    if len(history) == 0:
+        return
+    response = history[-1][1]
+    question = history[-1][0]
+    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "liked")
+    gr.Info("Saved successfully!")
+
+def log_disliked_response(history):
+    if len(history) == 0:
+        return
+    response = history[-1][1]
+    question = history[-1][0]
+    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "disliked")
+    gr.Info("Saved successfully!")
+
+def log_flagged_response(history):
+    if len(history) == 0:
+        return
+    response = history[-1][1]
+    question = history[-1][0]
+    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "flagged")
+    gr.Info("Saved successfully!")
+
+def chat_liked_or_disliked(history, data: gr.LikeData):
+    question = history[data.index[0]][0]
+    response = history[data.index[0]][1]
+    if data.liked:
+        log_commended_response([[question, response]])
+    else:
+        log_disliked_response([[question, response]])
 
 ####################################################################################
 # Handling Flagged Responses
