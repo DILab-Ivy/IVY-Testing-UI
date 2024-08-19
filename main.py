@@ -33,6 +33,8 @@ from constants import (
     USER_EMAIL
 )
 
+MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
+
 app = FastAPI()
 
 @app.get("/")

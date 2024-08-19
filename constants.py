@@ -46,9 +46,6 @@ LOGIN_URL = (
 )
 GET_ACCESS_TOKEN_URL = COGNITO_DOMAIN + "/oauth2/token"
 GET_USER_INFO_URL = COGNITO_DOMAIN + "/oauth2/userInfo"
-USER_NAME = ""
-USERNAME = ""
-USER_EMAIL = ""
 
 # Check environment variables
 check_required_env_vars()
