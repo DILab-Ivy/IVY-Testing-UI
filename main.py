@@ -26,6 +26,7 @@ from constants import (
     GET_USER_INFO_URL
 )
 
+from user_data import UserConfig
 
 MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
 
@@ -66,7 +67,7 @@ def get_access_token_and_user_info(url_code):
         )
         access_token = response.json()["access_token"]
         # Update Access token in constants/config file 
-        Config.ACCESS_TOKEN = access_token 
+        UserConfig.ACCESS_TOKEN = access_token 
 
         # Get User Info
         response = requests.get(
@@ -74,11 +75,11 @@ def get_access_token_and_user_info(url_code):
         ).json()
 
         # Update User Info in constants/config file 
-        Config.USERNAME = response["username"]
-        Config.USER_NAME = response["name"]
+        UserConfig.USERNAME = response["username"]
+        UserConfig.USER_NAME = response["name"]
 
         # Log user login in DynamoDB
-        log_user_login(Config.USERNAME, Config.ACCESS_TOKEN)
+        log_user_login(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN)
 
         return True
     except Exception as e:
@@ -162,7 +163,7 @@ with gr.Blocks() as ivy_main_page:
         if not get_access_token_and_user_info(url_code):
             # (TODO): Redirect to Login page or display Error page
             return "An Error Occurred"
-        return f"# Welcome to Ivy Chatbot, {Config.USER_NAME}"
+        return f"# Welcome to Ivy Chatbot, {UserConfig.USER_NAME}"
 
     
     def update_user_message(user_message, history):
@@ -177,11 +178,11 @@ with gr.Blocks() as ivy_main_page:
             yield history
         # Log to DynamoDB every interaction here
         log_chat_history(
-            Config.USERNAME, Config.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
+            UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, history[-1][0], history[-1][1], "no_reaction"
         )
 
     def handle_download_click():
-        filepath = generate_csv(Config.USERNAME, Config.ACCESS_TOKEN)
+        filepath = generate_csv(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN)
         return filepath if filepath else None
 
     def update_skill(skill_name):

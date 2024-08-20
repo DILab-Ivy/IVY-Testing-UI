@@ -13,8 +13,8 @@ import tempfile
 import os
 import gradio as gr
 
-# Access configuration file 
-from constants import Config
+# Access user data file 
+from user_data import UserConfig
 
 
 # Initialize DynamoDB
@@ -94,7 +94,7 @@ def log_commended_response(history):
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "liked")
+    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "liked")
     gr.Info("Saved successfully!")
 
 def log_disliked_response(history):
@@ -102,7 +102,7 @@ def log_disliked_response(history):
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "disliked")
+    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "disliked")
     gr.Info("Saved successfully!")
 
 def log_flagged_response(history):
@@ -110,7 +110,7 @@ def log_flagged_response(history):
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(Config.USERNAME, Config.ACCESS_TOKEN, question, response, "flagged")
+    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "flagged")
     gr.Info("Saved successfully!")
 
 def chat_liked_or_disliked(history, data: gr.LikeData):
