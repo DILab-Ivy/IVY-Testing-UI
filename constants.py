@@ -1,9 +1,6 @@
 #####################################################################################################################
 # Description:
-# The constants.py module defines the configuration settings and constants.
-# Class UserConfig is used so that other modules are able to 
-#   Usage: (1) Import: from constants import UserConfig
-#          (2) Call by: UserConfig.ACCESS_TOKEN, UserConfig.USERNAME 
+# The constants.py module defines the constants used in multiple modules.
 # The module also includes validation for required environment variables.
 #####################################################################################################################
 import os
