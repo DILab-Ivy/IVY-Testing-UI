@@ -2,7 +2,7 @@ import os
 import pathlib
 import gradio as gr
 import httpx
-from gpp_openai_assistant import get_mage_gpp_response
+from openai_assistant_handling import get_mage_gpp_response
 
 
 # TODO: merge with db handling branch

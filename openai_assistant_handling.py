@@ -7,7 +7,7 @@ from openai.types.beta.threads import Text, TextDelta
 from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
 from typing import List
-from gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states
+from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states
 
 
 # OpenAI Response Function
