@@ -1,5 +1,5 @@
 import unittest
-import gpp_solving_functions
+import skills.semantic_networks.gpp_solving_functions as gpp_solving_functions
 
 class TestFindPathBetweenTwoStates(unittest.TestCase):
 
