@@ -11,7 +11,7 @@ from skills.semantic_networks.gpp_solving_functions import find_path_between_two
 
 
 # OpenAI Response Function
-def get_mage_gpp_response(question: str) -> str:
+def get_mage_response(question: str) -> str:
     print(f"user_question: {question}")
     client = openai.OpenAI()
     response = ""

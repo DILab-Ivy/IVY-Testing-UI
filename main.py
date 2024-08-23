@@ -2,7 +2,7 @@ import os
 import pathlib
 import gradio as gr
 import httpx
-from openai_assistant_handling import get_mage_gpp_response
+from openai_assistant_handling import get_mage_response
 
 
 # TODO: merge with db handling branch
@@ -102,7 +102,7 @@ with gr.Blocks() as demo:
                 yield history
         elif chatbot_selector == "MAGE - Episodic Query demo":
             history[-1][1] = ""
-            response_generator = get_mage_gpp_response(history[-1][0])
+            response_generator = get_mage_response(history[-1][0])
             for character in response_generator:
                 history[-1][1] += character
                 yield history
