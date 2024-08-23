@@ -7,7 +7,38 @@ from openai.types.beta.threads import Text, TextDelta
 from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
 from typing import List
+
+from skills.planning.planners.blockworld_planner import BlockWorldPlanner
+from skills.planning.planners.planner import Planner
+from skills.planning.planners.robot_painting_planner import RobotPaintingPlanner
 from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states
+
+
+# Dispatcher function
+def get_planner(problem_type: str) -> Planner:
+    if problem_type == 'blockworld':
+        return BlockWorldPlanner()
+    elif problem_type == 'robot':
+        return RobotPaintingPlanner()
+    else:
+        raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
+
+# Wrapper functions that use the planner
+def generate_plan(problem_type: str, start_state, goal_state):
+    planner = get_planner(problem_type)
+    return planner.generate_plan(start_state, goal_state)
+
+def reorder_to_avoid(problem_type: str, obstacles):
+    planner = get_planner(problem_type)
+    return planner.reorder_to_avoid(obstacles)
+
+def complete_plan(problem_type: str, partial_plan):
+    planner = get_planner(problem_type)
+    return planner.complete_plan(partial_plan)
+
+def generate_complete_plan(problem_type: str, start_state, goal_state, obstacles):
+    planner = get_planner(problem_type)
+    return planner.generate_complete_plan(start_state, goal_state, obstacles)
 
 
 # OpenAI Response Function
