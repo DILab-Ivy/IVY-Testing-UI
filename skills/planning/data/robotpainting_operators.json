@@ -1,0 +1,22 @@
+[
+    {
+        "name": "climb-ladder",
+        "preconditions": ["On(Robot, Floor)", "Dry(Ladder)"],
+        "postconditions": ["On(Robot, Ladder)"]
+    },
+    {
+        "name": "descend-ladder",
+        "preconditions": ["On(Robot, Ladder)", "Dry(Ladder)"],
+        "postconditions": ["On(Robot, Floor)"]
+    },
+    {
+        "name": "paint-ceiling",
+        "preconditions": ["On(Robot, Ladder)"],
+        "postconditions": ["Painted(Ceiling)", "¬Dry(Ceiling)"]
+    },
+    {
+        "name": "paint-ladder",
+        "preconditions": ["On(Robot, Floor)"],
+        "postconditions": ["Painted(Ladder)", "¬Dry(Ladder)"]
+    }
+]
