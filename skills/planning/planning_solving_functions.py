@@ -5,6 +5,7 @@ from skills.planning.planners.robot_painting_planner import RobotPaintingPlanner
 
 
 def get_planner(problem_type: str) -> Planner:
+    """Function to load planner for appropriate problem instance"""
     if problem_type == 'blockworld':
         return BlockWorldPlanner()
     elif problem_type == 'robot':
