@@ -60,6 +60,7 @@ def get_mage_response(question: str) -> str:
                         print(tool.code_interpreter.input, end="", flush=True)
 
         def handle_requires_action(self, data, run_id, tool_id=None):
+            #TODO: separate out GPP and Planning handling by creating two versions of handle_requires_action in separate files or add Plannning parameter handling for new functions to this file
             def empty_args_error(tool):
                 missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
                 print(missing_arg_error_message)
@@ -152,8 +153,6 @@ def get_mage_response(question: str) -> str:
                     # print(text, end="", flush=True)
                 print()
 
-    # ASSISTANT_ID = "asst_KuvzrM2XDMLGAke8qknm1Xmt" #V10
-    # ASSISTANT_ID = "asst_2r1rHMIpTsnB9lJR1dYPGZOm" #v11
     # ASSISTANT_ID = "asst_Hh9KFq4TgDdijln6CyTZgIlz" #v15
     ASSISTANT_ID = "asst_bTejWDz2qFjzlsjvLgmAACez"  # V18 tmk_str referencing
 
