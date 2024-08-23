@@ -5,7 +5,7 @@ from skills.planning.planners.planner import Planner
 class RobotPaintingPlanner(Planner):
     def _get_json_filepath(self) -> str:
         """Provide the JSON file path for RobotPaintingPlanner's operators."""
-        return 'robotpainting_operators.json'
+        return 'skills/planning/data/robotpainting_operators.json'
 
     def generate_plan(self, start_state, goal_state):
         print(f"Generating plan for Robot Painting from {start_state} to {goal_state}")
