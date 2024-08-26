@@ -29,15 +29,16 @@ def get_state_object(problem_type: str, state_conditions_list: str) -> State:
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
+
 # Wrapper functions that use the planner
-def generate_plan(problem_type: str, start_state, goal_state):
-    if problem_type == 'blockworld':
-        return BlockWorldPlanner()
-    elif problem_type == 'robot':
-        return RobotPaintingPlanner()
-    else:
-        raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
+def generate_plan(problem_type: str, start_state_conditions: str, goal_state_conditions: str):
+    # Initialize Planner based on problem_type
     planner = get_planner(problem_type)
+
+    # Convert conditions string from agent into appropriate State instances based on problem type
+    start_state = get_state_object(problem_type, start_state_conditions)
+    goal_state = get_state_object(problem_type, goal_state_conditions)
+
     return planner.generate_partial_plan(start_state, goal_state)
 
 def reorder_to_avoid(problem_type: str, plans: List[List[str]]):
@@ -48,6 +49,12 @@ def complete_plan(problem_type: str, partial_plan):
     planner = get_planner(problem_type)
     return planner.complete_plan(partial_plan)
 
-def generate_complete_plan(problem_type: str, start_state, goal_state):
+def generate_complete_plan(problem_type: str, start_state_conditions, goal_state_conditions):
+    # Initialize Planner based on problem_type
     planner = get_planner(problem_type)
+
+    # Convert conditions string from agent into appropriate State instances based on problem type
+    start_state = get_state_object(problem_type, start_state_conditions)
+    goal_state = get_state_object(problem_type, goal_state_conditions)
+
     return planner.generate_complete_plan(start_state, goal_state)
