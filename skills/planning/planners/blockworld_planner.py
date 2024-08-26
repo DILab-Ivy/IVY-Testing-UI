@@ -10,8 +10,8 @@ class BlockWorldPlanner(Planner):
         print(f"Generating plan for Block World from {start_state} to {goal_state}")
         return ["move A to B", "move B to C"]
 
-    def reorder_to_avoid(self, obstacles):
-        print(f"Reordering plan to avoid obstacles: {obstacles}")
+    def reorder_to_avoid(self, plans):
+        print(f"Reordering plan to avoid obstacles: {plans}")
         return ["move C to A", "move B to C"]
 
     def complete_plan(self, partial_plan):
