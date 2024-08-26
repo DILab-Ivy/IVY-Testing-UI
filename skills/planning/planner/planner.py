@@ -2,8 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import List, Dict
 import json
-from skills.planning.operators.operator import Operator
-from skills.planning.states.state import State
+from skills.planning.operator.operator import Operator
+from skills.planning.state.state import State
 
 
 class Planner(ABC):
@@ -11,7 +11,7 @@ class Planner(ABC):
         self.operators = self._generate_operators()
 
     def _generate_operators(self) -> Dict[str, 'Operator']:
-        """Private method to load operators specific to the planner."""
+        """Private method to load operator specific to the planner."""
         json_filepath = str(self._get_json_filepath())  # Get the JSON file path from the subclass
 
         with open(json_filepath, 'r') as file:
@@ -25,12 +25,12 @@ class Planner(ABC):
             operator = Operator(name, preconditions, postconditions)
             operators[name] = operator
 
-        print(f"Loaded operators for {self.__class__.__name__}: {operators}")
+        print(f"Loaded operator for {self.__class__.__name__}: {operators}")
         return operators
 
     @abstractmethod
     def _get_json_filepath(self) -> str:
-        """Abstract method to get the JSON file path for the operators."""
+        """Abstract method to get the JSON file path for the operator."""
         pass
 
     @abstractmethod

@@ -2,11 +2,11 @@
 import json
 from typing import List
 
-from skills.planning.planners.instances.blockworld_planner import BlockWorldPlanner
-from skills.planning.planners.planner import Planner
-from skills.planning.planners.instances.robot_painting_planner import RobotPaintingPlanner
-from skills.planning.states.instances.robot_painting_state import RobotPaintingState
-from skills.planning.states.state import State
+from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
+from skills.planning.planner.planner import Planner
+from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
+from skills.planning.state.instances.robot_painting_state import RobotPaintingState
+from skills.planning.state.state import State
 
 
 def get_planner(problem_type: str) -> Planner:

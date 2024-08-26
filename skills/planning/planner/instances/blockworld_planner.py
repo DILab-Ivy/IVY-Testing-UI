@@ -1,9 +1,9 @@
-from skills.planning.planners.planner import Planner
+from skills.planning.planner.planner import Planner
 
 
 class BlockWorldPlanner(Planner):
     def _get_json_filepath(self) -> str:
-        """Provide the JSON file path for BlockWorldPlanner's operators."""
+        """Provide the JSON file path for BlockWorldPlanner's operator."""
         return 'blockworld_operators.json'
 
     def generate_plan(self, start_state, goal_state):
@@ -21,7 +21,7 @@ class BlockWorldPlanner(Planner):
     def generate_complete_plan(self, start_state, goal_state, obstacles):
         print("BlockWorldPlanner: Custom complete plan logic")
 
-        # Use the loaded operators for additional logic (if needed)
+        # Use the loaded operator for additional logic (if needed)
         print(f"Operators available for planning: {self.operators}")
 
         # Step 1: Generate an initial plan

@@ -1,5 +1,5 @@
 from typing import Set, List
-from skills.planning.states.state import State
+from skills.planning.state.state import State
 from enum import Enum, auto
 
 class RobotPosition(Enum):

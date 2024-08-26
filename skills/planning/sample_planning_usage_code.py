@@ -1,8 +1,8 @@
 # Example Planner function Usage
-from skills.planning.operators.operator import Operator
+from skills.planning.operator.operator import Operator
 from skills.planning.planning_solving_functions import generate_complete_plan
-from skills.planning.states.robot_painting_state import RobotPosition, Status
-from skills.planning.states.state import State
+from skills.planning.state.robot_painting_state import RobotPosition, Status
+from skills.planning.state.state import State
 
 # Example State and Operator object usage
 # Define the initial state, goal state, and an example intermediate state

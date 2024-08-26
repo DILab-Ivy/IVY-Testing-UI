@@ -78,7 +78,7 @@ def get_next_states(
     """
     Curr state is in format [Guards Left, Guards Right, Prisoners Left, Prisoners Right, Boat Position]
 
-    Returns a dict with both valid and invalid states
+    Returns a dict with both valid and invalid state
     """
 
     def move_1_guard(curr_state: List[int]) -> List[int]:
@@ -220,14 +220,14 @@ def get_next_states(
         valid, valid_log = validate_state(new_state)
         log = log + " " + valid_log
         if valid:
-            # If the new state is valid, add it to the list of valid states
+            # If the new state is valid, add it to the list of valid state
             valid_states.append(new_state)
             valid_moves.append(move.__name__)
         else:
-            # If the new state is invalid, add it to the list of invalid states
+            # If the new state is invalid, add it to the list of invalid state
             invalid_states.append(new_state)
 
-    # Return the valid and invalid states
+    # Return the valid and invalid state
     result = {"valid": valid_states, "moves": valid_moves, "invalid": invalid_states, "log": log}
     print(f"result: {result}")
     return result

@@ -12,7 +12,7 @@ class Operator:
         return f"Operator(name={self.name}, preconditions={self.preconditions}, postconditions={self.postconditions})"
 
 
-# Function to read operators from a JSON file
+# Function to read operator from a JSON file
 def read_operators_from_json(file_path: str) -> Dict[str, Operator]:
     with open(file_path, 'r') as file:
         data = json.load(file)

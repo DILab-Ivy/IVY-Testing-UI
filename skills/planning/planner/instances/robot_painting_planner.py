@@ -1,11 +1,11 @@
 # Concrete implementation for Robot Painting
-from skills.planning.planners.planner import Planner
+from skills.planning.planner.planner import Planner
 from config import PLANNING_DATA_DIR
 
 
 class RobotPaintingPlanner(Planner):
     def _get_json_filepath(self) -> str:
-        """Provide the JSON file path for RobotPaintingPlanner's operators."""
+        """Provide the JSON file path for RobotPaintingPlanner's operator."""
         robot_planning_operators_path = PLANNING_DATA_DIR / 'robotpainting_operators.json'
         return robot_planning_operators_path
 
@@ -24,7 +24,7 @@ class RobotPaintingPlanner(Planner):
     def generate_complete_plan(self, start_state, goal_state):
         print("RobotPaintingPlanner: Custom complete plan logic")
 
-        # Use the loaded operators for additional logic (if needed)
+        # Use the loaded operator for additional logic (if needed)
         print(f"Operators available for planning: {self.operators}")
 
         # Step 1: Generate an initial plan
