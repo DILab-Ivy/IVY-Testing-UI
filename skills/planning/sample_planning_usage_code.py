@@ -1,22 +1,25 @@
 # Example Planner function Usage
 from skills.planning.operator.operator import Operator
 from skills.planning.planning_solving_functions import generate_complete_plan
-from skills.planning.state.robot_painting_state import RobotPosition, Status
+from skills.planning.state.instances.robot_painting_state import RobotPosition, Status
 from skills.planning.state.state import State
 
-# Example State and Operator object usage
-# Define the initial state, goal state, and an example intermediate state
-start_state = State(
-    robot_position=RobotPosition.ON_FLOOR,
-    ceiling_status={Status.DRY},
-    ladder_status={Status.DRY}
-)
-
-goal_state = State(
-    robot_position=RobotPosition.ON_FLOOR,
-    ceiling_status={Status.PAINTED, Status.NOT_DRY},
-    ladder_status={Status.PAINTED, Status.NOT_DRY}
-)
+# # Example State and Operator object usage
+# # Define the initial state, goal state, and an example intermediate state
+# start_state = State(
+#     robot_position=RobotPosition.ON_FLOOR,
+#     ceiling_status={Status.DRY},
+#     ladder_status={Status.DRY}
+# )
+#
+# goal_state = State(
+#     robot_position=RobotPosition.ON_FLOOR,
+#     ceiling_status={Status.PAINTED, Status.NOT_DRY},
+#     ladder_status={Status.PAINTED, Status.NOT_DRY}
+# )
+start_state = ['On(Robot, Floor)', 'Dry(Ceiling)', 'Dry(Ladder)']
+# TODO: during State creation, have Painted conditions automatically add ¬Dry conditions and remove Dry conditions
+goal_state = ['On(Robot, Floor)', 'Painted(Ceiling)', 'Painted(Ladder)']
 
 # Call generate_complete_plan for RobotPaintingPlanner
 print("\nRobotPaintingPlanner:")

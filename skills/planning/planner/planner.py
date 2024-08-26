@@ -34,22 +34,17 @@ class Planner(ABC):
         pass
 
     @abstractmethod
-    def generate_plan(self, start_state: State, goal_state: State):
-        """Generate a plan from start_state to goal_state."""
+    def generate_partial_plan(self, start_state: State, goal_condition: str) -> str:
+        """Generate a plan from start_state to a goal_state satisfying a single goal condition"""
         pass
 
     @abstractmethod
-    def reorder_to_avoid(self, plans: List[List[str]]):
+    def reorder_partial_plans(self, plans: Dict) -> List[str]:
         """Reorder actions to avoid obstacles."""
         pass
 
     @abstractmethod
-    def complete_plan(self, partial_plan: List[str]):
-        """Complete a partial plan."""
-        pass
-
-    @abstractmethod
-    def generate_complete_plan(self, start_state: State, goal_state: State):
+    def generate_complete_plan(self, start_state: State, goal_state: State) -> str:
         """
         Generate a complete plan using the generate_plan, reorder_to_avoid,
         and complete_plan methods.

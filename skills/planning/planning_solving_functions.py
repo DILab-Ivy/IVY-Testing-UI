@@ -38,16 +38,16 @@ def generate_plan(problem_type: str, start_state, goal_state):
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
     planner = get_planner(problem_type)
-    return planner.generate_plan(start_state, goal_state)
+    return planner.generate_partial_plan(start_state, goal_state)
 
 def reorder_to_avoid(problem_type: str, plans: List[List[str]]):
     planner = get_planner(problem_type)
-    return planner.reorder_to_avoid(plans)
+    return planner.reorder_partial_plans(plans)
 
 def complete_plan(problem_type: str, partial_plan):
     planner = get_planner(problem_type)
     return planner.complete_plan(partial_plan)
 
-def generate_complete_plan(problem_type: str, start_state, goal_state, obstacles):
+def generate_complete_plan(problem_type: str, start_state, goal_state):
     planner = get_planner(problem_type)
-    return planner.generate_complete_plan(start_state, goal_state, obstacles)
+    return planner.generate_complete_plan(start_state, goal_state)

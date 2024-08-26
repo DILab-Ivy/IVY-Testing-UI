@@ -6,17 +6,14 @@ class BlockWorldPlanner(Planner):
         """Provide the JSON file path for BlockWorldPlanner's operator."""
         return 'blockworld_operators.json'
 
-    def generate_plan(self, start_state, goal_state):
+    def generate_partial_plan(self, start_state, goal_state):
         print(f"Generating plan for Block World from {start_state} to {goal_state}")
         return ["move A to B", "move B to C"]
 
-    def reorder_to_avoid(self, plans):
+    def reorder_partial_plans(self, plans):
         print(f"Reordering plan to avoid obstacles: {plans}")
         return ["move C to A", "move B to C"]
 
-    def complete_plan(self, partial_plan):
-        print(f"Completing the partial plan: {partial_plan}")
-        return partial_plan + ["finalize stacking"]
 
     def generate_complete_plan(self, start_state, goal_state, obstacles):
         print("BlockWorldPlanner: Custom complete plan logic")
@@ -25,10 +22,10 @@ class BlockWorldPlanner(Planner):
         print(f"Operators available for planning: {self.operators}")
 
         # Step 1: Generate an initial plan
-        plan = self.generate_plan(start_state, goal_state)
+        plan = self.generate_partial_plan(start_state, goal_state)
 
         # Step 2: Reorder the plan to avoid obstacles
-        reordered_plan = self.reorder_to_avoid(obstacles)
+        reordered_plan = self.reorder_partial_plans(obstacles)
 
         # Step 3: Complete the reordered plan
         complete_plan = self.complete_plan(reordered_plan)
