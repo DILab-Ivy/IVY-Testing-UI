@@ -114,7 +114,7 @@ with gr.Blocks() as ivy_main_page:
     # Title
     welcome_msg = gr.Markdown()
     # Settings
-    with gr.Row():
+    with gr.Row() as settings_ask_ivy:
         mcm_skill = gr.Dropdown(
             choices=SKILL_NAME_TO_MCM_URL.keys(),
             value="Classification",
@@ -159,7 +159,7 @@ with gr.Blocks() as ivy_main_page:
     with gr.Row():
         submit = gr.Button(value="Submit", variant="primary")
         clear = gr.Button(value="Clear", variant="stop")
-    with gr.Row():
+    with gr.Row() as flag_download_button_grp_ask_ivy:
         flag_btn = gr.Button(
             value="Flag last response", variant="secondary", visible=IS_DEVELOPER_VIEW
         )
@@ -169,27 +169,45 @@ with gr.Blocks() as ivy_main_page:
             visible=IS_DEVELOPER_VIEW,
         )
 
-    def update_skill(skill_name):
+    def update_skill_ask_ivy(skill_name):
         global MCM_SKILL
         global MCM_URL
         MCM_SKILL = skill_name
         MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
         return []
 
-    def on_askivy_page_load(skill_name, request: gr.Request):
+    def on_page_load_ask_ivy(skill_name, request: gr.Request):
+        # If session data not already available, get access tokens.
         if not UserConfig.ACCESS_TOKEN:
             if "code" not in dict(request.query_params):
                 # (TODO): Redirect to login page
-                return "Go back to login page"
-            url_code = dict(request.query_params)["code"]
-            if not get_access_token_and_user_info(url_code):
-                # (TODO): Redirect to Login page or display Error page
-                return "An Error Occurred"
+                display_msg = "Go back to login page"
+            else:
+                url_code = dict(request.query_params)["code"]
+                if not get_access_token_and_user_info(url_code):
+                    # (TODO): Redirect to Login page or display Error page
+                    display_msg = "An Error Occurred"
+                else:
+                    display_msg = f"# Welcome to Ivy Chatbot, {USER_NAME}"
 
+        # Update visibility of certain components for LITE mode.
+        visibility_update = [gr.update(visible=True)] * 3
+        if "mode_lite" in dict(request.query_params):
+            if dict(request.query_params)["mode_lite"] == "true":
+                print("setting mode lite")
+                visibility_update = [gr.update(visible=False)] * 3
+
+        # Persist skill across pages.
         if MCM_SKILL:
             skill_name = MCM_SKILL
-        update_skill(skill_name)
-        return [f"# Welcome to Ivy Chatbot, {UserConfig.USER_NAME}", skill_name]
+        # Retrieve skill from query params if available.
+        if "skill" in dict(request.query_params):
+            skill_param = dict(request.query_params)["skill"]
+            if skill_param in SKILL_NAME_TO_MCM_URL:
+                skill_name = skill_param
+        update_skill_ask_ivy(skill_name)
+
+        return [display_msg, skill_name] + visibility_update
 
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
@@ -214,8 +232,18 @@ with gr.Blocks() as ivy_main_page:
         filepath = generate_csv(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN)
         return filepath if filepath else None
 
-    ivy_main_page.load(on_askivy_page_load, [mcm_skill], [welcome_msg, mcm_skill])
-    mcm_skill.change(update_skill, [mcm_skill], [chatbot])
+    ivy_main_page.load(
+        on_page_load_ask_ivy,
+        [mcm_skill],
+        [
+            welcome_msg,
+            mcm_skill,
+            settings_ask_ivy,
+            clear,
+            flag_download_button_grp_ask_ivy,
+        ],
+    )
+    mcm_skill.change(update_skill_ask_ivy, [mcm_skill], [chatbot])
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
     ).success(get_response_from_ivy, chatbot, chatbot)
@@ -530,7 +558,7 @@ with gr.Blocks(
             )
         EVALUATION_QUESTIONS.sort()
 
-    def update_skill(skill_name):
+    def update_skill_evaluation(skill_name):
         global MCM_SKILL
         MCM_SKILL = skill_name
         global MCM_URL
@@ -544,14 +572,12 @@ with gr.Blocks(
             create_progress_indicator(EVALUATION_QUESTION_NUM),
         ]
 
-    def on_eval_page_load(skill_name):
-        print("EVAL page load")
+    def on_page_load_evaluation(skill_name):
         global MCM_SKILL
-        print("MCM_SKILL", MCM_SKILL)
         if MCM_SKILL:
             skill_name = MCM_SKILL  # Maintain state across pages
         global EVALUATION_QUESTION_NUM
-        first_question_to_display = update_skill(skill_name)[0]
+        first_question_to_display = update_skill_evaluation(skill_name)[0]
         return [
             create_progress_indicator(EVALUATION_QUESTION_NUM),
             first_question_to_display,
@@ -559,10 +585,12 @@ with gr.Blocks(
         ]
 
     evaluation_page.load(
-        on_eval_page_load, [mcm_skill], [progress_bar, question_text, mcm_skill]
+        on_page_load_evaluation, [mcm_skill], [progress_bar, question_text, mcm_skill]
     )
     mcm_skill.change(
-        update_skill, [mcm_skill], [question_text, response_text, progress_bar]
+        update_skill_evaluation,
+        [mcm_skill],
+        [question_text, response_text, progress_bar],
     )
 
 app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy", root_path="/ask-ivy")
