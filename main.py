@@ -194,7 +194,6 @@ with gr.Blocks() as ivy_main_page:
         visibility_update = [gr.update(visible=True)] * 3
         if "mode_lite" in dict(request.query_params):
             if dict(request.query_params)["mode_lite"] == "true":
-                print("setting mode lite")
                 visibility_update = [gr.update(visible=False)] * 3
 
         # Persist skill across pages.
