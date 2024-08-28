@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from skills.planning.planning_solving_functions import get_planner, get_state_object, generate_plan, reorder_to_avoid, generate_complete_plan
 from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState
+from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
 
 
 class TestDispatcherFunctions(unittest.TestCase):
@@ -12,9 +13,8 @@ class TestDispatcherFunctions(unittest.TestCase):
         self.assertIsInstance(planner, RobotPaintingPlanner)
 
     def test_get_planner_blockworld(self):
-        with self.assertRaises(ValueError) as context:
-            get_planner('blockworld')
-        self.assertEqual(str(context.exception), "Blockworld planner not implemented")
+        planner = get_planner('blockworld')
+        self.assertIsInstance(planner, BlockWorldPlanner)
 
     def test_get_planner_unknown(self):
         with self.assertRaises(ValueError) as context:
@@ -22,7 +22,7 @@ class TestDispatcherFunctions(unittest.TestCase):
         self.assertEqual(str(context.exception), "Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
     def test_get_state_object_robot(self):
-        state_conditions_list = '[{"condition": "painted", "object": "wall"}]'
+        state_conditions_list = ['On(Robot, Floor)', 'Dry(Ceiling)', 'Dry(Ladder)']
         state = get_state_object('robot', state_conditions_list)
         self.assertIsInstance(state, RobotPaintingState)
 
