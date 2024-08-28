@@ -20,6 +20,7 @@ from constants import (
     SKILL_NAME_TO_MCM_URL,
     COGNITO_DOMAIN,
     REDIRECT_URL,
+    EVALUATION_URL,
     CLIENT_ID,
     CLIENT_SECRET,
     LOGIN_URL,
@@ -116,15 +117,17 @@ with gr.Blocks() as ivy_main_page:
     # Title
     welcome_msg = gr.Markdown()
     # Settings
-    with gr.Row() as settings_ask_ivy:
-        mcm_skill = gr.Dropdown(
+    with gr.Row():
+        mcm_skill_ask_ivy = gr.Dropdown(
             choices=SKILL_NAME_TO_MCM_URL.keys(),
             value="Classification",
             multiselect=False,
             label="Skill",
             interactive=True,
         )
-        with gr.Accordion("Settings", open=False, visible=IS_DEVELOPER_VIEW):
+        with gr.Accordion(
+            "Settings", open=False, visible=IS_DEVELOPER_VIEW
+        ) as settings_ask_ivy:
             # MCM Settings
             with gr.Group("MCM Settings"):
                 with gr.Row():
@@ -142,9 +145,7 @@ with gr.Blocks() as ivy_main_page:
                         value=60,
                         interactive=True,
                     )
-        goto_eval_page_btn = gr.Button(
-            value="Evaluate Ivy", link="/evaluation", scale=0.5
-        )
+        goto_eval_page_btn = gr.Button(value="Evaluate Ivy")
 
     chatbot = gr.Chatbot(
         label="Your Conversation",
@@ -211,7 +212,15 @@ with gr.Blocks() as ivy_main_page:
                 skill_name = skill_param
         update_skill_ask_ivy(skill_name)
 
-        return [display_msg, skill_name] + visibility_update
+        updated_mcm_skill_ask_ivy = gr.Dropdown(
+            choices=SKILL_NAME_TO_MCM_URL.keys(),
+            value=skill_name,
+            multiselect=False,
+            label="Skill",
+            interactive=True,
+            visible=(not embed_mode),
+        )
+        return [display_msg, updated_mcm_skill_ask_ivy] + visibility_update
 
     def update_user_message(user_message, history):
         return "", history + [[user_message, None]]
@@ -238,16 +247,19 @@ with gr.Blocks() as ivy_main_page:
 
     ivy_main_page.load(
         on_page_load_ask_ivy,
-        [mcm_skill],
+        [mcm_skill_ask_ivy],
         [
             welcome_msg,
-            mcm_skill,
+            mcm_skill_ask_ivy,
             settings_ask_ivy,
             clear,
             flag_download_button_grp_ask_ivy,
         ],
     )
-    mcm_skill.change(update_skill_ask_ivy, [mcm_skill], [chatbot])
+    mcm_skill_ask_ivy.change(update_skill_ask_ivy, [mcm_skill_ask_ivy], [chatbot])
+    goto_eval_page_btn.click(
+        None, None, None, js=f"() => window.open('{EVALUATION_URL}', '_blank')"
+    )
     msg.submit(
         update_user_message, [msg, chatbot], [msg, chatbot], queue=False
     ).success(get_response_from_ivy, chatbot, chatbot)
@@ -281,7 +293,7 @@ with gr.Blocks(
     welcome_msg = gr.Markdown()
     # Settings
     with gr.Row():
-        mcm_skill = gr.Dropdown(
+        mcm_skill_evaluation = gr.Dropdown(
             choices=SKILL_NAME_TO_MCM_URL.keys(),
             value="Classification",
             multiselect=False,
@@ -306,7 +318,6 @@ with gr.Blocks(
                         value=60,
                         interactive=True,
                     )
-        goto_askivy_page = gr.Button(value="Ask Ivy", link="/ask-ivy", scale=0.5)
 
     progress_bar = gr.HTML()
 
@@ -436,7 +447,7 @@ with gr.Blocks(
             return gr.Button(
                 value="Submit and Finish Evaluation",
                 variant="primary",
-                link="/ask-ivy",
+                link="/post-eval",
             )
         else:
             return submit_rating_button
@@ -569,17 +580,27 @@ with gr.Blocks(
         ]
 
     evaluation_page.load(
-        on_page_load_evaluation, [mcm_skill], [progress_bar, question_text, mcm_skill]
+        on_page_load_evaluation,
+        [mcm_skill_evaluation],
+        [progress_bar, question_text, mcm_skill_evaluation],
     )
-    mcm_skill.change(
+    mcm_skill_evaluation.change(
         update_skill_evaluation,
-        [mcm_skill],
+        [mcm_skill_evaluation],
         [question_text, response_text, progress_bar],
+    )
+
+with gr.Blocks() as post_eval_page:
+    gr.HTML(
+        f"<h1>Thank you for evaluating Ivy.</h1>You can close this window or go back to <a href='{EVALUATION_URL}' target='_self'>evaluation page</a> for evaluating another skill."
     )
 
 app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy", root_path="/ask-ivy")
 app = gr.mount_gradio_app(
     app, evaluation_page, path="/evaluation", root_path="/evaluation"
+)
+app = gr.mount_gradio_app(
+    app, post_eval_page, path="/post-eval", root_path="/post-eval"
 )
 
 if __name__ == "__main__":
