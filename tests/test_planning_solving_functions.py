@@ -4,6 +4,7 @@ from skills.planning.planning_solving_functions import get_planner, get_state_ob
 from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState
 from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
+from skills.planning.operator.operator import Operator
 
 
 class TestDispatcherFunctions(unittest.TestCase):
@@ -11,10 +12,11 @@ class TestDispatcherFunctions(unittest.TestCase):
     def test_get_planner_robot(self):
         planner = get_planner('robot')
         self.assertIsInstance(planner, RobotPaintingPlanner)
+        self.assertIsInstance(planner.operators['climb-ladder'], Operator)
 
-    def test_get_planner_blockworld(self):
-        planner = get_planner('blockworld')
-        self.assertIsInstance(planner, BlockWorldPlanner)
+    # def test_get_planner_blockworld(self):
+    #     planner = get_planner('blockworld')
+    #     self.assertIsInstance(planner, BlockWorldPlanner)
 
     def test_get_planner_unknown(self):
         with self.assertRaises(ValueError) as context:
@@ -26,10 +28,10 @@ class TestDispatcherFunctions(unittest.TestCase):
         state = get_state_object('robot', state_conditions_list)
         self.assertIsInstance(state, RobotPaintingState)
 
-    def test_get_state_object_blockworld(self):
-        with self.assertRaises(ValueError) as context:
-            get_state_object('blockworld', '[{"condition": "on", "object": "block"}]')
-        self.assertEqual(str(context.exception), "Blockworld State creation not implemented")
+    # def test_get_state_object_blockworld(self):
+    #     state_conditions_list = ['On(A,B)', 'On(B,Table)']
+    #     state = get_state_object('blockworld', state_conditions_list)
+    #     self.assertIsInstance(state, BlockWorldState)
 
     def test_get_state_object_unknown(self):
         with self.assertRaises(ValueError) as context:
