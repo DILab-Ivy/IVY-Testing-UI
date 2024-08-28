@@ -19,7 +19,6 @@ from constants import (
     SKILL_NAME_TO_MCM_URL,
     COGNITO_DOMAIN,
     REDIRECT_URL,
-    EVALUATION_URL,
     CLIENT_ID,
     CLIENT_SECRET,
     LOGIN_URL,
