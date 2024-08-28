@@ -143,10 +143,16 @@ class TestRobotPaintingState(unittest.TestCase):
         # Check if state matches operator preconditions
         self.assertFalse(state.check_if_state_matches_operator(operator))
 
-    def test_return_eligible_goal_conditions_not_implemented(self):
-        initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
-        with self.assertRaises(NotImplementedError):
-            initial_state.return_eligible_goal_conditions()
+    def test_return_eligible_goal_conditions(self):
+        # Create an instance of RobotPaintingState
+        state = RobotPaintingState(RobotPosition.ON_FLOOR, set(), set())
+
+        # Expected list of eligible goal conditions
+        expected_conditions = ['Painted(Ceiling)', 'Painted(Ladder)']
+
+        # Assert that the returned list matches the expected list
+        self.assertListEqual(state.return_eligible_goal_conditions(), expected_conditions)
+
 
     def test_format_state(self):
         state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED, Status.DRY}, {Status.NOT_DRY})

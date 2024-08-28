@@ -149,8 +149,7 @@ class RobotPaintingState(State):
 
     def return_eligible_goal_conditions(self) -> List[str]:
         """Returns list of conditions that are eligible for partial order plan"""
-        # return ['Painted(Ceiling)', 'Painted(Ladder)'] # example from robot instance - basically we don't also need to search for ¬Dry(Ceiling) etc too
-        pass
+        return ['Painted(Ceiling)', 'Painted(Ladder)'] # example from robot instance - basically we don't also need to search for ¬Dry(Ceiling) etc too
 
     def format_state(self) -> str:
         """Format the current state for easy reporting."""
