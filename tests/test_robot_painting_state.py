@@ -111,11 +111,37 @@ class TestRobotPaintingState(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             initial_state.check_if_state_clobbers_operator(operator)
 
-    def test_check_if_state_matches_operator_not_implemented(self):
-        initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
-        operator = MagicMock()
-        with self.assertRaises(NotImplementedError):
-            initial_state.check_if_state_matches_operator(operator)
+    def test_check_if_state_matches_operator_success(self):
+        # Setup the state and operator
+        state = RobotPaintingState(
+            RobotPosition.ON_FLOOR,
+            {Status.PAINTED, Status.NOT_DRY},
+            {Status.DRY}
+        )
+        operator = Operator(
+            name="climb-ladder",
+            preconditions=["On(Robot, Floor)", "Dry(Ladder)"],
+            postconditions=["On(Robot, Ladder)"]  # Defined postconditions, even if not used in this test
+        )
+
+        # Check if state matches operator preconditions
+        self.assertTrue(state.check_if_state_matches_operator(operator))
+
+    def test_check_if_state_matches_operator_failure(self):
+        # Setup the state and operator
+        state = RobotPaintingState(
+            RobotPosition.ON_LADDER,
+            {Status.NOT_DRY},
+            {Status.DRY}
+        )
+        operator = Operator(
+            name="paint-ceiling",
+            preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+            postconditions=["Painted(Ceiling)"]  # Defined postconditions, even if not used in this test
+        )
+
+        # Check if state matches operator preconditions
+        self.assertFalse(state.check_if_state_matches_operator(operator))
 
     def test_return_eligible_goal_conditions_not_implemented(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
