@@ -89,8 +89,31 @@ class RobotPaintingState(State):
                 self.ladder_status == goal_state.ladder_status)
 
     def apply_operator(self, operator: 'Operator') -> 'RobotPaintingState':
-        # TODO: make sure to retun error if preconditions of the operator are not met by the current state
-        """Apply an operator to the current state to produce a new state."""
+        """
+        Apply an operator to the current state to produce a new state.
+        Raises an error if the operator's preconditions are not met by the current state.
+        """
+
+        # Check if the current state meets the operator's preconditions
+        for precondition in operator.preconditions:
+            if precondition == "On(Robot, Floor)" and self.robot_position != RobotPosition.ON_FLOOR:
+                raise ValueError("Precondition 'On(Robot, Floor)' is not met.")
+            elif precondition == "On(Robot, Ladder)" and self.robot_position != RobotPosition.ON_LADDER:
+                raise ValueError("Precondition 'On(Robot, Ladder)' is not met.")
+            elif precondition == "Dry(Ceiling)" and Status.DRY not in self.ceiling_status:
+                raise ValueError("Precondition 'Dry(Ceiling)' is not met.")
+            elif precondition == "¬Dry(Ceiling)" and Status.NOT_DRY not in self.ceiling_status:
+                raise ValueError("Precondition '¬Dry(Ceiling)' is not met.")
+            elif precondition == "Painted(Ceiling)" and Status.PAINTED not in self.ceiling_status:
+                raise ValueError("Precondition 'Painted(Ceiling)' is not met.")
+            elif precondition == "Dry(Ladder)" and Status.DRY not in self.ladder_status:
+                raise ValueError("Precondition 'Dry(Ladder)' is not met.")
+            elif precondition == "¬Dry(Ladder)" and Status.NOT_DRY not in self.ladder_status:
+                raise ValueError("Precondition '¬Dry(Ladder)' is not met.")
+            elif precondition == "Painted(Ladder)" and Status.PAINTED not in self.ladder_status:
+                raise ValueError("Precondition 'Painted(Ladder)' is not met.")
+
+        # If all preconditions are met, apply the operator
         new_robot_position = self.robot_position
         new_ceiling_status = self.ceiling_status.copy()
         new_ladder_status = self.ladder_status.copy()

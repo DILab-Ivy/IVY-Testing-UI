@@ -50,34 +50,60 @@ class TestRobotPaintingState(unittest.TestCase):
         state2 = RobotPaintingState(RobotPosition.ON_LADDER, {Status.PAINTED}, {Status.DRY})
         self.assertFalse(state1.is_goal_state(state2))
 
-    def test_apply_operator_climb_ladder(self):
+    def test_apply_operator_climb_ladder_success(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
-
-        # Create a mock Operator with preconditions and postconditions
-        operator = MagicMock(spec=Operator)
-        operator.name = 'climb-ladder'
-        operator.preconditions = ['On(Robot, Floor)']
-        operator.postconditions = ['On(Robot, Ladder)']
-
-        # Apply the operator to the initial state
+        operator = Operator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
         new_state = initial_state.apply_operator(operator)
-
-        # Assert that the state has been updated as expected
         self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
         self.assertEqual(new_state.ceiling_status, {Status.PAINTED})
         self.assertEqual(new_state.ladder_status, {Status.DRY})
 
-    def test_apply_operator_paint_ceiling(self):
-        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.NOT_DRY}, {Status.DRY})
+    def test_apply_operator_climb_ladder_failure(self):
+        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.PAINTED}, {Status.DRY})
+        operator = Operator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
 
-        # Create a mock Operator for painting the ceiling
-        operator = MagicMock(spec=Operator)
-        operator.name = 'paint-ceiling'
-        operator.preconditions = ['On(Robot, Ladder)', '¬Dry(Ceiling)']
-        operator.postconditions = ['Painted(Ceiling)', '¬Dry(Ceiling)']
+        with self.assertRaises(ValueError) as context:
+            initial_state.apply_operator(operator)
 
-        # Apply the operator to the initial state
+        self.assertTrue("Precondition 'On(Robot, Floor)' is not met." in str(context.exception))
+
+    def test_apply_operator_paint_ceiling_success(self):
+        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.DRY}, {Status.DRY})
+        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+                            postconditions=[])
         new_state = initial_state.apply_operator(operator)
+        self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
+        self.assertEqual(new_state.ceiling_status, {Status.PAINTED, Status.NOT_DRY})
+        self.assertEqual(new_state.ladder_status, {Status.DRY})
+
+    def test_apply_operator_paint_ceiling_failure_due_to_position(self):
+        initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.DRY}, {Status.DRY})
+        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+                            postconditions=[])
+
+        with self.assertRaises(ValueError) as context:
+            initial_state.apply_operator(operator)
+
+        self.assertTrue("Precondition 'On(Robot, Ladder)' is not met." in str(context.exception))
+
+    def test_apply_operator_paint_ceiling_failure_due_to_status(self):
+        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.NOT_DRY}, {Status.DRY})
+        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+                            postconditions=[])
+
+        with self.assertRaises(ValueError) as context:
+            initial_state.apply_operator(operator)
+
+        self.assertTrue("Precondition 'Dry(Ceiling)' is not met." in str(context.exception))
+
+    def test_apply_operator_unknown_precondition(self):
+        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.DRY}, {Status.DRY})
+        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Roof)"], postconditions=[])
+
+        with self.assertRaises(ValueError) as context:
+            initial_state.apply_operator(operator)
+
+        self.assertTrue("Unknown or unsupported precondition: On(Robot, Roof)" in str(context.exception))
 
         # Assert that the ceiling has been painted and is not dry
         self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
