@@ -1,8 +1,8 @@
 #####################################################################################################################
 # Description:
-# The chat_logging.py module is responsible for handling all logging-related functionality for user login and chat history 
-# in the Ivy Chatbot application. It provides functions to log user login events, store chat interactions, 
-# update chat reactions, fetch flagged messages, and generate CSV files of flagged chats. 
+# The chat_logging.py module is responsible for handling all logging-related functionality for user login and chat history
+# in the Ivy Chatbot application. It provides functions to log user login events, store chat interactions,
+# update chat reactions, fetch flagged messages, and generate CSV files of flagged chats.
 #####################################################################################################################
 
 import time
@@ -13,7 +13,7 @@ import tempfile
 import os
 import gradio as gr
 
-# Access user data file 
+# Access user data file
 from user_data import UserConfig
 
 
@@ -21,24 +21,29 @@ from user_data import UserConfig
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 login_table = dynamodb.Table("UserLogin")
 chat_history_table = dynamodb.Table("ChatHistory")
+evaluation_questions_table = dynamodb.Table("EvalQuestions")
+evaluation_responses_table = dynamodb.Table("Evaluation")
+
 
 ####################################################################################
 # Logging User Sign-in to UserLogin DB
 ####################################################################################
 def log_user_login(user_id, session_id):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
-        login_data = {
-            "Username": user_id,
-            "SessionId": session_id,
-            "Timestamp": timestamp,
-        }
-        login_table.put_item(Item=login_data)
+    timestamp = time.time()
+    dt = datetime.fromtimestamp(timestamp)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
+    login_data = {
+        "Username": user_id,
+        "SessionId": session_id,
+        "Timestamp": timestamp,
+    }
+    login_table.put_item(Item=login_data)
+
 
 ####################################################################################
 # Logging and Updating Chat History to ChatHistory DB
 ####################################################################################
+
 
 def log_chat_history(user_id, session_id, question, response, reaction):
     timestamp = time.time()
@@ -69,6 +74,7 @@ def log_chat_history(user_id, session_id, question, response, reaction):
         chat_history_table.put_item(Item=chat_data)
         print("Chat data logged successfully")
 
+
 def update_chat_history(user_id, session_id, question, response, reaction):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
@@ -85,33 +91,44 @@ def update_chat_history(user_id, session_id, question, response, reaction):
         ReturnValues="UPDATED_NEW",
     )
 
+
 ####################################################################################
 # Handling Reaction to Responses
 ####################################################################################
+
 
 def log_commended_response(history):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "liked")
+    log_chat_history(
+        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "liked"
+    )
     gr.Info("Saved successfully!")
+
 
 def log_disliked_response(history):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "disliked")
+    log_chat_history(
+        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "disliked"
+    )
     gr.Info("Saved successfully!")
+
 
 def log_flagged_response(history):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "flagged")
+    log_chat_history(
+        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "flagged"
+    )
     gr.Info("Saved successfully!")
+
 
 def chat_liked_or_disliked(history, data: gr.LikeData):
     question = history[data.index[0]][0]
@@ -121,21 +138,54 @@ def chat_liked_or_disliked(history, data: gr.LikeData):
     else:
         log_disliked_response([[question, response]])
 
+
+def get_evaluation_questions(skill_name):
+    return evaluation_questions_table.scan(
+        FilterExpression=boto3.dynamodb.conditions.Attr("Skill").eq(skill_name)
+    )
+
+
+def log_evaluation_response(
+    mcm_skill, question, question_type, response_text, eval_ratings
+):
+    timestamp = time.time()
+    dt = datetime.fromtimestamp(timestamp)
+    timestamp = dt.strftime("%b-%d-%Y_%H:%M")
+    eval_response_data = {
+        "Timestamp": timestamp,
+        "Username": UserConfig.USERNAME,
+        "SessionId": UserConfig.ACCESS_TOKEN,
+        "Skill": mcm_skill,
+        "Question": question,
+        "QuestionType": question_type,
+        "Response": response_text,
+        "Metric_Correctness": eval_ratings[0],
+        "Metric_Completeness": eval_ratings[1],
+        "Metric_Confidence": eval_ratings[2],
+        "Metric_Comprehensibility": eval_ratings[3],
+        "Metric_Compactness": eval_ratings[4],
+    }
+    evaluation_responses_table.put_item(Item=eval_response_data)
+
+
 ####################################################################################
 # Handling Flagged Responses
 ####################################################################################
 
+
 def fetch_flagged_messages(user_id, session_id):
-        response = chat_history_table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr("Username").eq(user_id)
-            & boto3.dynamodb.conditions.Attr("SessionId").eq(session_id)
-            & boto3.dynamodb.conditions.Attr("Reaction").eq("flagged")
-        )
-        return response.get("Items", [])
+    response = chat_history_table.scan(
+        FilterExpression=boto3.dynamodb.conditions.Attr("Username").eq(user_id)
+        & boto3.dynamodb.conditions.Attr("SessionId").eq(session_id)
+        & boto3.dynamodb.conditions.Attr("Reaction").eq("flagged")
+    )
+    return response.get("Items", [])
+
 
 ####################################################################################
 # Generate CSV Files from fetched flagged message in DynamoDB
 ####################################################################################
+
 
 def generate_csv(user_id, session_id):
     items = fetch_flagged_messages(user_id, session_id)
