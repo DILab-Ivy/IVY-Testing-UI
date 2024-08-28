@@ -1,4 +1,3 @@
-# Dispatcher function
 import json
 from typing import List
 
@@ -44,10 +43,6 @@ def generate_plan(problem_type: str, start_state_conditions: str, goal_state_con
 def reorder_to_avoid(problem_type: str, plans: List[List[str]]):
     planner = get_planner(problem_type)
     return planner.reorder_partial_plans(plans)
-
-def complete_plan(problem_type: str, partial_plan):
-    planner = get_planner(problem_type)
-    return planner.complete_plan(partial_plan)
 
 def generate_complete_plan(problem_type: str, start_state_conditions, goal_state_conditions):
     # Initialize Planner based on problem_type

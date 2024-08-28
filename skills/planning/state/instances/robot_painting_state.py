@@ -105,6 +105,19 @@ class RobotPaintingState(State):
 
         return RobotPaintingState(new_robot_position, new_ceiling_status, new_ladder_status)
 
+    def check_if_state_clobbers_operator(self, operator: 'Operator') -> 'State':
+        """Check if State conditions clobber Operator preconditions"""
+        pass
+
+    def check_if_state_matches_operator(self, operator: 'Operator') -> 'State':
+        """Check if State conditions match provided Operator preconditions"""
+        pass
+
+    def return_eligible_goal_conditions(self) -> List[str]:
+        """Returns list of conditions that are eligible for partial order plan"""
+        # return ['Painted(Ceiling)', 'Painted(Ladder)'] # example from robot instance - basically we don't also need to search for ¬Dry(Ceiling) etc too
+        pass
+
     def format_state(self) -> str:
         """Format the current state for easy reporting."""
         conditions = []
