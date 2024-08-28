@@ -1,4 +1,4 @@
-from typing import Set, List
+from typing import Set, List, Callable, Dict
 from skills.planning.state.state import State
 from enum import Enum, auto
 
@@ -17,6 +17,20 @@ class RobotPaintingState(State):
         self.robot_position = robot_position
         self.ceiling_status = ceiling_status
         self.ladder_status = ladder_status
+
+    # TODO: set this with Planner if appropriate so that the planner.operators can be used rather than duplicating precondition data definition here
+    def get_condition_checks(self) -> Dict[str, Callable[[], bool]]:
+        """Return a dictionary of condition checks specific to RobotPaintingState."""
+        return {
+            "On(Robot, Floor)": lambda: self.robot_position == RobotPosition.ON_FLOOR,
+            "On(Robot, Ladder)": lambda: self.robot_position == RobotPosition.ON_LADDER,
+            "Dry(Ceiling)": lambda: Status.DRY in self.ceiling_status,
+            "¬Dry(Ceiling)": lambda: Status.NOT_DRY in self.ceiling_status,
+            "Painted(Ceiling)": lambda: Status.PAINTED in self.ceiling_status,
+            "Dry(Ladder)": lambda: Status.DRY in self.ladder_status,
+            "¬Dry(Ladder)": lambda: Status.NOT_DRY in self.ladder_status,
+            "Painted(Ladder)": lambda: Status.PAINTED in self.ladder_status
+        }
 
     @classmethod
     def from_conditions_list(cls, conditions: List[str]) -> 'RobotPaintingState':
@@ -93,25 +107,14 @@ class RobotPaintingState(State):
         Apply an operator to the current state to produce a new state.
         Raises an error if the operator's preconditions are not met by the current state.
         """
-
-        # Check if the current state meets the operator's preconditions
+        condition_checks = self.get_condition_checks()
+        # Check if each precondition is met
         for precondition in operator.preconditions:
-            if precondition == "On(Robot, Floor)" and self.robot_position != RobotPosition.ON_FLOOR:
-                raise ValueError("Precondition 'On(Robot, Floor)' is not met.")
-            elif precondition == "On(Robot, Ladder)" and self.robot_position != RobotPosition.ON_LADDER:
-                raise ValueError("Precondition 'On(Robot, Ladder)' is not met.")
-            elif precondition == "Dry(Ceiling)" and Status.DRY not in self.ceiling_status:
-                raise ValueError("Precondition 'Dry(Ceiling)' is not met.")
-            elif precondition == "¬Dry(Ceiling)" and Status.NOT_DRY not in self.ceiling_status:
-                raise ValueError("Precondition '¬Dry(Ceiling)' is not met.")
-            elif precondition == "Painted(Ceiling)" and Status.PAINTED not in self.ceiling_status:
-                raise ValueError("Precondition 'Painted(Ceiling)' is not met.")
-            elif precondition == "Dry(Ladder)" and Status.DRY not in self.ladder_status:
-                raise ValueError("Precondition 'Dry(Ladder)' is not met.")
-            elif precondition == "¬Dry(Ladder)" and Status.NOT_DRY not in self.ladder_status:
-                raise ValueError("Precondition '¬Dry(Ladder)' is not met.")
-            elif precondition == "Painted(Ladder)" and Status.PAINTED not in self.ladder_status:
-                raise ValueError("Precondition 'Painted(Ladder)' is not met.")
+            if precondition not in condition_checks:
+                raise ValueError(f"Unknown or unsupported precondition: {precondition}")
+
+            if not condition_checks[precondition]():
+                raise ValueError(f"Precondition '{precondition}' is not met.")
 
         # If all preconditions are met, apply the operator
         new_robot_position = self.robot_position
@@ -133,9 +136,16 @@ class RobotPaintingState(State):
         """Check if State conditions clobber Operator preconditions"""
         pass
 
-    def check_if_state_matches_operator(self, operator: 'Operator') -> 'State':
-        """Check if State conditions match provided Operator preconditions"""
-        pass
+    def check_if_state_matches_operator(self, operator: 'Operator') -> bool:
+        """Check if State conditions match provided Operator preconditions using condition checks."""
+        condition_checks = self.get_condition_checks()  # Use instance method to fetch the condition checks
+
+        for precondition in operator.preconditions:
+            # Check if the precondition exists in the condition checks and if it evaluates to True
+            if precondition not in condition_checks or not condition_checks[precondition]():
+                return False
+
+        return True
 
     def return_eligible_goal_conditions(self) -> List[str]:
         """Returns list of conditions that are eligible for partial order plan"""
