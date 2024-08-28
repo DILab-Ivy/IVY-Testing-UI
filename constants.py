@@ -31,6 +31,11 @@ REDIRECT_URL = (
     if ON_LOCALHOST
     else "https://dev.dilab-ivy.com/ask-ivy"
 )
+EVALUATION_URL = (
+    "http://localhost:8002/evaluation"
+    if ON_LOCALHOST
+    else "https://dev.dilab-ivy.com/evaluation"
+)
 CLIENT_ID = (
     "60p8a9bvteiihrd8g89r5ggabi" if ON_LOCALHOST else "2d7ah9kttong2hdlt4olhtao4d"
 )
