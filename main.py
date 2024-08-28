@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -265,7 +266,11 @@ with gr.Blocks() as ivy_main_page:
 # Launch the Application
 ivy_main_page.queue()
 
-evaluation_css = open("css/evaluation.css", "r").read()
+try:
+    evaluation_css = open("css/evaluation.css", "r").read()
+except OSError:
+    print("Could not open/read css file at css/evaluation.css")
+    sys.exit()
 with gr.Blocks(
     theme=gr.themes.Default(
         primary_hue=gr.themes.colors.teal, secondary_hue=gr.themes.colors.red
