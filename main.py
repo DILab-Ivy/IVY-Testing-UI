@@ -19,11 +19,13 @@ from constants import (
     SKILL_NAME_TO_MCM_URL,
     COGNITO_DOMAIN,
     REDIRECT_URL,
+    EVALUATION_URL,
     CLIENT_ID,
     CLIENT_SECRET,
     LOGIN_URL,
     GET_ACCESS_TOKEN_URL,
     GET_USER_INFO_URL,
+    EVALUATION_METRIC_DESCRIPTION,
 )
 
 from user_data import UserConfig
@@ -159,14 +161,11 @@ with gr.Blocks() as ivy_main_page:
     with gr.Row():
         submit = gr.Button(value="Submit", variant="primary")
         clear = gr.Button(value="Clear", variant="stop")
-    with gr.Row() as flag_download_button_grp_ask_ivy:
-        flag_btn = gr.Button(
-            value="Flag last response", variant="secondary", visible=IS_DEVELOPER_VIEW
-        )
+    with gr.Row(visible=IS_DEVELOPER_VIEW) as flag_download_button_grp_ask_ivy:
+        flag_btn = gr.Button(value="Flag last response", variant="secondary")
         download_btn = gr.DownloadButton(
             value="Download Flagged Responses",
             variant="secondary",
-            visible=IS_DEVELOPER_VIEW,
         )
 
     def update_skill_ask_ivy(skill_name):
@@ -177,24 +176,30 @@ with gr.Blocks() as ivy_main_page:
         return []
 
     def on_page_load_ask_ivy(skill_name, request: gr.Request):
-        # If session data not already available, get access tokens.
-        if not UserConfig.ACCESS_TOKEN:
-            if "code" not in dict(request.query_params):
-                # (TODO): Redirect to login page
-                display_msg = "Go back to login page"
-            else:
-                url_code = dict(request.query_params)["code"]
-                if not get_access_token_and_user_info(url_code):
-                    # (TODO): Redirect to Login page or display Error page
-                    display_msg = "An Error Occurred"
-                else:
-                    display_msg = f"# Welcome to Ivy Chatbot, {USER_NAME}"
-
-        # Update visibility of certain components for LITE mode.
+        # Update visibility of certain components when Ivy is being embedded.
+        embed_mode = False
         visibility_update = [gr.update(visible=True)] * 3
-        if "mode_lite" in dict(request.query_params):
-            if dict(request.query_params)["mode_lite"] == "true":
+        if "embed" in dict(request.query_params):
+            if dict(request.query_params)["embed"] == "true":
+                embed_mode = True
                 visibility_update = [gr.update(visible=False)] * 3
+
+        display_msg = "# Welcome to Ivy!"
+        if not embed_mode:
+            # If session data not already available, get access tokens.
+            if not UserConfig.ACCESS_TOKEN:
+                if "code" not in dict(request.query_params):
+                    # (TODO): Redirect to login page
+                    display_msg = "Go back to login page"
+                else:
+                    url_code = dict(request.query_params)["code"]
+                    if not get_access_token_and_user_info(url_code):
+                        # (TODO): Redirect to Login page or display Error page
+                        display_msg = "An Error Occurred"
+                    else:
+                        display_msg = (
+                            f"# Welcome to Ivy Chatbot, {UserConfig.USER_NAME}"
+                        )
 
         # Persist skill across pages.
         if MCM_SKILL:
