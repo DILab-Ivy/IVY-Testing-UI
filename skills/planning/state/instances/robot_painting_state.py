@@ -89,6 +89,7 @@ class RobotPaintingState(State):
                 self.ladder_status == goal_state.ladder_status)
 
     def apply_operator(self, operator: 'Operator') -> 'RobotPaintingState':
+        # TODO: make sure to retun error if preconditions of the operator are not met by the current state
         """Apply an operator to the current state to produce a new state."""
         new_robot_position = self.robot_position
         new_ceiling_status = self.ceiling_status.copy()

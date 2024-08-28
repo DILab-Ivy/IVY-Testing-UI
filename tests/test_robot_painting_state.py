@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState, RobotPosition, Status
+from skills.planning.operator.operator import Operator
 from enum import Enum, auto
 
 class TestRobotPaintingState(unittest.TestCase):
@@ -51,18 +52,37 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_climb_ladder(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
-        operator = MagicMock(name='climb-ladder')
+
+        # Create a mock Operator with preconditions and postconditions
+        operator = MagicMock(spec=Operator)
+        operator.name = 'climb-ladder'
+        operator.preconditions = ['On(Robot, Floor)']
+        operator.postconditions = ['On(Robot, Ladder)']
+
+        # Apply the operator to the initial state
         new_state = initial_state.apply_operator(operator)
+
+        # Assert that the state has been updated as expected
         self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
         self.assertEqual(new_state.ceiling_status, {Status.PAINTED})
         self.assertEqual(new_state.ladder_status, {Status.DRY})
 
     def test_apply_operator_paint_ceiling(self):
-        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, set(), set())
-        operator = MagicMock(name='paint-ceiling')
+        initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.NOT_DRY}, {Status.DRY})
+
+        # Create a mock Operator for painting the ceiling
+        operator = MagicMock(spec=Operator)
+        operator.name = 'paint-ceiling'
+        operator.preconditions = ['On(Robot, Ladder)', '¬Dry(Ceiling)']
+        operator.postconditions = ['Painted(Ceiling)', '¬Dry(Ceiling)']
+
+        # Apply the operator to the initial state
         new_state = initial_state.apply_operator(operator)
-        self.assertIn(Status.PAINTED, new_state.ceiling_status)
-        self.assertIn(Status.NOT_DRY, new_state.ceiling_status)
+
+        # Assert that the ceiling has been painted and is not dry
+        self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
+        self.assertEqual(new_state.ceiling_status, {Status.PAINTED, Status.NOT_DRY})
+        self.assertEqual(new_state.ladder_status, {Status.DRY})
 
     def test_check_if_state_clobbers_operator_not_implemented(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
