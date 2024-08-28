@@ -7,6 +7,7 @@ from skills.planning.state.state import State
 
 
 class RobotPaintingPlanner(Planner):
+    # TODO: when using the State .apply_operator method, make sure to check if the operator exists in planner.operators first
     def _get_json_filepath(self) -> str:
         """Provide the JSON file path for RobotPaintingPlanner's operator."""
         robot_planning_operators_path = PLANNING_DATA_DIR / 'robot_painting_operators.json'
