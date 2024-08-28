@@ -448,7 +448,6 @@ with gr.Blocks(
             return skip_question_button
 
     def skip_eval_question():
-        global EVALUATION_QUESTIONS
         global EVALUATION_QUESTION_NUM
         EVALUATION_QUESTION_NUM += 1
         return [
@@ -486,6 +485,7 @@ with gr.Blocks(
     )
 
     def submit_rating_clear_update_question(response_concatenated_eval_ratings):
+        global EVALUATION_QUESTION_NUM
         response_text, concatenated_eval_ratings = (
             response_concatenated_eval_ratings.split("-")
         )
@@ -496,8 +496,6 @@ with gr.Blocks(
             response_text,
             concatenated_eval_ratings.split(","),
         )
-        global EVALUATION_QUESTIONS
-        global EVALUATION_QUESTION_NUM
         EVALUATION_QUESTION_NUM += 1
         return [
             create_progress_indicator(EVALUATION_QUESTION_NUM),
@@ -554,8 +552,6 @@ with gr.Blocks(
         global MCM_URL
         MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
         update_eval_questions(skill_name)
-        global EVALUATION_QUESTIONS
-        global EVALUATION_QUESTION_NUM
         return [
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
             "",
@@ -563,10 +559,8 @@ with gr.Blocks(
         ]
 
     def on_page_load_evaluation(skill_name):
-        global MCM_SKILL
         if MCM_SKILL:
             skill_name = MCM_SKILL  # Maintain state across pages
-        global EVALUATION_QUESTION_NUM
         first_question_to_display = update_skill_evaluation(skill_name)[0]
         return [
             create_progress_indicator(EVALUATION_QUESTION_NUM),
