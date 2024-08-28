@@ -139,6 +139,35 @@ def chat_liked_or_disliked(history, data: gr.LikeData):
         log_disliked_response([[question, response]])
 
 
+def get_evaluation_questions(skill_name):
+    return evaluation_questions_table.scan(
+        FilterExpression=boto3.dynamodb.conditions.Attr("Skill").eq(skill_name)
+    )
+
+
+def log_evaluation_response(
+    mcm_skill, question, question_type, response_text, eval_ratings
+):
+    timestamp = time.time()
+    dt = datetime.fromtimestamp(timestamp)
+    timestamp = dt.strftime("%b-%d-%Y_%H:%M")
+    eval_response_data = {
+        "Timestamp": timestamp,
+        "Username": UserConfig.USERNAME,
+        "SessionId": UserConfig.ACCESS_TOKEN,
+        "Skill": mcm_skill,
+        "Question": question,
+        "QuestionType": question_type,
+        "Response": response_text,
+        "Metric_Correctness": eval_ratings[0],
+        "Metric_Completeness": eval_ratings[1],
+        "Metric_Confidence": eval_ratings[2],
+        "Metric_Comprehensibility": eval_ratings[3],
+        "Metric_Compactness": eval_ratings[4],
+    }
+    evaluation_responses_table.put_item(Item=eval_response_data)
+
+
 ####################################################################################
 # Handling Flagged Responses
 ####################################################################################

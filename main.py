@@ -485,33 +485,17 @@ with gr.Blocks(
         js=clear_evaluation_rating_js,
     )
 
-    def log_evaluation_response(response_text, eval_ratings):
-        timestamp = time.time()
-        dt = datetime.fromtimestamp(timestamp)
-        timestamp = dt.strftime("%b-%d-%Y_%H:%M")
-        global EVALUATION_QUESTIONS
-        global EVALUATION_QUESTION_NUM
-        eval_response_data = {
-            "Timestamp": timestamp,
-            "Username": UserConfig.USERNAME,
-            "SessionId": UserConfig.ACCESS_TOKEN,
-            "Skill": MCM_SKILL,
-            "Question": EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
-            "QuestionType": EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][0],
-            "Response": response_text,
-            "Metric_Correctness": eval_ratings[0],
-            "Metric_Completeness": eval_ratings[1],
-            "Metric_Confidence": eval_ratings[2],
-            "Metric_Comprehensibility": eval_ratings[3],
-            "Metric_Compactness": eval_ratings[4],
-        }
-        evaluation_responses_table.put_item(Item=eval_response_data)
-
     def submit_rating_clear_update_question(response_concatenated_eval_ratings):
         response_text, concatenated_eval_ratings = (
             response_concatenated_eval_ratings.split("-")
         )
-        log_evaluation_response(response_text, concatenated_eval_ratings.split(","))
+        log_evaluation_response(
+            MCM_SKILL,
+            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
+            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][0],
+            response_text,
+            concatenated_eval_ratings.split(","),
+        )
         global EVALUATION_QUESTIONS
         global EVALUATION_QUESTION_NUM
         EVALUATION_QUESTION_NUM += 1
@@ -552,9 +536,7 @@ with gr.Blocks(
     )
 
     def update_eval_questions(skill_name):
-        response = evaluation_questions_table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr("Skill").eq(skill_name)
-        )
+        response = get_evaluation_questions(skill_name)
         response = response.get("Items", [])
         global EVALUATION_QUESTIONS
         EVALUATION_QUESTIONS = []
