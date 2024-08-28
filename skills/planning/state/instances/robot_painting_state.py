@@ -18,19 +18,8 @@ class RobotPaintingState(State):
         self.ceiling_status = ceiling_status
         self.ladder_status = ladder_status
 
-    # TODO: set this with Planner if appropriate so that the planner.operators can be used rather than duplicating precondition data definition here
-    def get_condition_checks(self) -> Dict[str, Callable[[], bool]]:
-        """Return a dictionary of condition checks specific to RobotPaintingState."""
-        return {
-            "On(Robot, Floor)": lambda: self.robot_position == RobotPosition.ON_FLOOR,
-            "On(Robot, Ladder)": lambda: self.robot_position == RobotPosition.ON_LADDER,
-            "Dry(Ceiling)": lambda: Status.DRY in self.ceiling_status,
-            "¬Dry(Ceiling)": lambda: Status.NOT_DRY in self.ceiling_status,
-            "Painted(Ceiling)": lambda: Status.PAINTED in self.ceiling_status,
-            "Dry(Ladder)": lambda: Status.DRY in self.ladder_status,
-            "¬Dry(Ladder)": lambda: Status.NOT_DRY in self.ladder_status,
-            "Painted(Ladder)": lambda: Status.PAINTED in self.ladder_status
-        }
+        # Clean up status on initialization
+        self.sync_painted_dry_status()
 
     @classmethod
     def from_conditions_list(cls, conditions: List[str]) -> 'RobotPaintingState':
@@ -93,8 +82,39 @@ class RobotPaintingState(State):
             raise ValueError(
                 "Missing ladder status condition. Must specify at least one ladder condition (e.g., 'Dry(Ladder)').")
 
-        # Create and return the RobotPaintingState object
-        return cls(robot_position, ceiling_status, ladder_status)
+        # Create the RobotPaintingState object
+        state = cls(robot_position, ceiling_status, ladder_status)
+
+        # Ensure the state is consistent
+        state.sync_painted_dry_status()
+
+        return state
+
+    def sync_painted_dry_status(self):
+        """Ensure that painted surfaces are also not dry and vice versa."""
+        # Synchronize ceiling status
+        if Status.PAINTED in self.ceiling_status or Status.NOT_DRY in self.ceiling_status:
+            self.ceiling_status.discard(Status.DRY)  # Remove dry if it's painted or not dry
+            self.ceiling_status.update({Status.PAINTED, Status.NOT_DRY})  # Ensure both painted and not dry are present
+
+        # Synchronize ladder status
+        if Status.PAINTED in self.ladder_status or Status.NOT_DRY in self.ladder_status:
+            self.ladder_status.discard(Status.DRY)  # Remove dry if it's painted or not dry
+            self.ladder_status.update({Status.PAINTED, Status.NOT_DRY})  # Ensure both painted and not dry are present
+
+    # TODO: set this with Planner if appropriate so that the planner.operators can be used rather than duplicating precondition data definition here
+    def get_condition_checks(self) -> Dict[str, Callable[[], bool]]:
+        """Return a dictionary of condition checks specific to RobotPaintingState."""
+        return {
+            "On(Robot, Floor)": lambda: self.robot_position == RobotPosition.ON_FLOOR,
+            "On(Robot, Ladder)": lambda: self.robot_position == RobotPosition.ON_LADDER,
+            "Dry(Ceiling)": lambda: Status.DRY in self.ceiling_status,
+            "¬Dry(Ceiling)": lambda: Status.NOT_DRY in self.ceiling_status,
+            "Painted(Ceiling)": lambda: Status.PAINTED in self.ceiling_status,
+            "Dry(Ladder)": lambda: Status.DRY in self.ladder_status,
+            "¬Dry(Ladder)": lambda: Status.NOT_DRY in self.ladder_status,
+            "Painted(Ladder)": lambda: Status.PAINTED in self.ladder_status
+        }
 
     def is_goal_state(self, goal_state: 'RobotPaintingState') -> bool:
         """Check if current state matches the goal state."""
@@ -130,11 +150,21 @@ class RobotPaintingState(State):
         elif operator.name == "paint-ladder":
             new_ladder_status = {Status.PAINTED, Status.NOT_DRY}
 
-        return RobotPaintingState(new_robot_position, new_ceiling_status, new_ladder_status)
+        new_state = RobotPaintingState(new_robot_position, new_ceiling_status, new_ladder_status)
+        new_state.sync_painted_dry_status()
+        return new_state
 
-    def check_if_state_clobbers_operator(self, operator: 'Operator') -> 'State':
-        """Check if State conditions clobber Operator preconditions"""
-        pass
+    def check_if_state_clobbers_operator(self, operator: 'Operator') -> bool:
+        """Check if the State conditions clobber the Operator preconditions."""
+
+        # Check if the ladder is painted and not dry
+        ladder_clobber_condition = Status.PAINTED in self.ladder_status and Status.NOT_DRY in self.ladder_status
+
+        # Check for the specific operator and conditions
+        if operator.name == "climb-ladder" and ladder_clobber_condition:
+            return True  # The state clobbers the operator because the ladder is painted and not dry
+
+        return False  # The state does not clobber the operator
 
     def check_if_state_matches_operator(self, operator: 'Operator') -> bool:
         """Check if State conditions match provided Operator preconditions using condition checks."""
