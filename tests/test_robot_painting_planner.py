@@ -2,22 +2,24 @@ import unittest
 from unittest.mock import patch, MagicMock
 from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState, RobotPosition, Status
+from config import PLANNING_DATA_DIR
 
 class TestRobotPaintingPlanner(unittest.TestCase):
 
-    @patch('skills.planning.planner.instances.robot_painting_planner.PLANNING_DATA_DIR')
-    def test_get_json_filepath(self, mock_planning_data_dir):
-        mock_planning_data_dir.__truediv__.return_value = '/mock/path/robot_painting_operators.json'
+    def test_get_json_filepath(self):
         planner = RobotPaintingPlanner()
-        expected_path = '/mock/path/robot_painting_operators.json'
+        expected_path = PLANNING_DATA_DIR / 'robot_painting_operators.json'
         self.assertEqual(planner._get_json_filepath(), expected_path)
 
     def test_generate_partial_plan(self):
         planner = RobotPaintingPlanner()
         start_state = MagicMock(spec=RobotPaintingState)
         goal_condition = "Painted(Ceiling)"
+        # TODO: construct correct expected plan: initial format can be a set in the following format: ("str":List[str])
+        #  ("goal1": ["start", "{initial state}", "{operator}", "{resulting state}", "{operator}"......."{goal state}", "end"])
+        expected_plan = ["paint ladder", "paint ceiling"]
         partial_plan = planner.generate_partial_plan(start_state, goal_condition)
-        self.assertEqual(partial_plan, ["paint ladder", "paint ceiling"])
+        self.assertEqual(partial_plan, expected_plan)
 
     def test_reorder_partial_plans(self):
         planner = RobotPaintingPlanner()
