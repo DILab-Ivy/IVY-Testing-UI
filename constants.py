@@ -22,6 +22,7 @@ SKILL_NAME_TO_MCM_URL = {
     "Means End Analysis": "https://mea.dilab-ivy.com/ivy/ask_question",
     "Semantic Networks": "https://gpp.dilab-ivy.com/ivy/ask_question",
     "Planning": "https://planning.dilab-ivy.com/ivy/ask_question",
+    "Semantic Networks Logic": "https://gpp.logic.dilab-ivy.com/ivy/ask_question",
 }
 COGNITO_DOMAIN = "https://ivy.auth.us-east-1.amazoncognito.com"
 REDIRECT_URL = (
