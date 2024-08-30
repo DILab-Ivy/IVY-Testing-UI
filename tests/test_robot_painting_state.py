@@ -77,7 +77,7 @@ class TestRobotPaintingState(unittest.TestCase):
         # Test case 2: Robot on ladder, ceiling painted and not dry, ladder dry
         state2 = RobotPaintingState(
             robot_position=RobotPosition.ON_LADDER,
-            ceiling_status={Status.PAINTED, Status.NOT_DRY},  # "¬Dry(Ceiling)" requires "Painted(Ceiling)"
+            ceiling_status={Status.PAINTED},  # "¬Dry(Ceiling)" requires "Painted(Ceiling)"
             ladder_status={Status.DRY}
         )
         expected_conditions2 = {"On(Robot, Ladder)", "Painted(Ceiling)", "¬Dry(Ceiling)", "Dry(Ladder)"}
@@ -86,7 +86,7 @@ class TestRobotPaintingState(unittest.TestCase):
         # Test case 3: Robot on ladder, ceiling and ladder are both painted and not dry
         state3 = RobotPaintingState(
             robot_position=RobotPosition.ON_LADDER,
-            ceiling_status={Status.PAINTED, Status.NOT_DRY},
+            ceiling_status={Status.PAINTED},
             ladder_status={Status.PAINTED, Status.NOT_DRY}
         )
         expected_conditions3 = {
