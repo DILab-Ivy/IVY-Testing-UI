@@ -17,6 +17,7 @@ class RobotPaintingState(State):
         self.robot_position = robot_position
         self.ceiling_status = ceiling_status
         self.ladder_status = ladder_status
+        self.condition_set = None
 
         # Clean up status on initialization
         self.sync_painted_dry_status()
@@ -203,25 +204,24 @@ class RobotPaintingState(State):
 
     def check_if_state_matches_operator(self, operator: 'Operator') -> bool:
         """Check if State conditions match provided Operator preconditions using condition checks."""
-        if self.robot_position == RobotPosition.ON_FLOOR:
-            condition = "On(Robot, Floor)"
-        else:
-            condition = "On(Robot, Ladder)"
         precondition = operator.precondition_for_reverse_search #ensuring just a single precondition for MVP simplicity # TODO: add multiple precondition handling
-        if precondition == condition:
+        if precondition in self.condition_set:
             return True
         return False
 
-    # def check_if_state_matches_goal_condition(self, goal_condition: str) -> bool:
-    #     """Check if State conditions match provided Operator preconditions using condition checks."""
-    #     if self.robot_position == RobotPosition.ON_FLOOR:
-    #         condition = "On(Robot, Floor)"
-    #     else:
-    #         condition = "On(Robot, Ladder)"
-    #     precondition = operator.precondition_for_reverse_search #ensuring just a single precondition for MVP simplicity # TODO: add multiple precondition handling
-    #     if precondition == condition:
-    #         return True
-    #     return False
+    def check_if_state_matches_goal_condition(self, goal_condition: str) -> bool:
+        """Check if State conditions match provided Operator preconditions using condition checks."""
+        # Define the valid painting-related goal conditions
+        valid_goal_conditions = {"Painted(Ceiling)", "Painted(Ladder)"}
+
+        # Check if the goal condition is a valid painting condition
+        if goal_condition not in valid_goal_conditions:
+            raise ValueError(f"Invalid goal condition '{goal_condition}'. Must be one of {valid_goal_conditions}.")
+
+        # Check if the goal in condition set
+        if goal_condition in self.condition_set:
+            return True
+        return False
 
     def return_eligible_goal_conditions(self) -> List[str]:
         """Returns list of conditions that are eligible for partial order plan"""

@@ -216,6 +216,40 @@ class TestRobotPaintingState(unittest.TestCase):
         # Check if state matches operator preconditions
         self.assertTrue(state.check_if_state_matches_operator(operator))
 
+    def test_check_if_state_matches_goal_condition(self):
+        # Test case 1: Robot on floor, ceiling painted, ladder not painted
+        state1 = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.PAINTED, Status.NOT_DRY},
+            ladder_status={Status.DRY}
+        )
+
+        # Check valid goal conditions
+        self.assertTrue(state1.check_if_state_matches_goal_condition("Painted(Ceiling)"))
+        self.assertFalse(state1.check_if_state_matches_goal_condition("Painted(Ladder)"))
+
+        # Test case 2: Robot on ladder, both ceiling and ladder painted
+        state2 = RobotPaintingState(
+            robot_position=RobotPosition.ON_LADDER,
+            ceiling_status={Status.PAINTED, Status.NOT_DRY},
+            ladder_status={Status.PAINTED, Status.NOT_DRY}
+        )
+
+        # Check valid goal conditions
+        self.assertTrue(state2.check_if_state_matches_goal_condition("Painted(Ceiling)"))
+        self.assertTrue(state2.check_if_state_matches_goal_condition("Painted(Ladder)"))
+
+        # Test case 3: Invalid goal condition check raises ValueError
+        with self.assertRaises(ValueError) as context:
+            state1.check_if_state_matches_goal_condition("Dry(Ceiling)")
+        self.assertEqual(str(context.exception),
+                         "Invalid goal condition 'Dry(Ceiling)'. Must be one of {'Painted(Ceiling)', 'Painted(Ladder)'}.")
+
+        with self.assertRaises(ValueError) as context:
+            state2.check_if_state_matches_goal_condition("Dry(Ladder)")
+        self.assertEqual(str(context.exception),
+                         "Invalid goal condition 'Dry(Ladder)'. Must be one of {'Painted(Ceiling)', 'Painted(Ladder)'}.")
+
     def test_check_if_state_matches_operator_failure(self):
         # Setup the state and operator
         state = RobotPaintingState(
