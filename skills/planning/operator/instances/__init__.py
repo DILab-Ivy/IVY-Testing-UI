@@ -1,0 +1,1 @@
+from .robot_painting_operator import RobotPaintingOperator

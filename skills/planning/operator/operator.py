@@ -1,5 +1,6 @@
 import json
 from typing import List, Dict
+from abc import ABC, abstractmethod
 
 
 class Operator:
@@ -7,22 +8,18 @@ class Operator:
         self.name = name
         self.preconditions = preconditions
         self.postconditions = postconditions
+        self.precondition_for_reverse_search = self._get_precondition_for_reverse_search()
+        # self.precondition_for_conflict_check = self._get_precondition_for_conflict_check()
 
     def __repr__(self):
         return f"Operator(name={self.name}, preconditions={self.preconditions}, postconditions={self.postconditions})"
 
+    @abstractmethod
+    def _get_precondition_for_reverse_search(self) -> str:
+        """Abstract method to get the JSON file path for the operator."""
+        pass
 
-# Function to read operator from a JSON file
-def read_operators_from_json(file_path: str) -> Dict[str, Operator]:
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-
-    operators = {}
-    for op_data in data:
-        name = op_data['name']
-        preconditions = op_data['preconditions']
-        postconditions = op_data['postconditions']
-        operator = Operator(name, preconditions, postconditions)
-        operators[name] = operator
-
-    return operators
+    # @abstractmethod
+    # def _get_precondition_for_conflict_check(self) -> str:
+    #     """Abstract method to get the JSON file path for the operator."""
+    #     pass

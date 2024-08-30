@@ -10,23 +10,10 @@ class Planner(ABC):
     def __init__(self):
         self.operators = self._generate_operators()
 
+    @abstractmethod
     def _generate_operators(self) -> Dict[str, 'Operator']:
         """Private method to load operator specific to the planner."""
-        json_filepath = str(self._get_json_filepath())  # Get the JSON file path from the subclass
-
-        with open(json_filepath, 'r') as file:
-            data = json.load(file)  # Load the JSON file
-
-        operators = {}
-        for op_data in data:
-            name = op_data['name']
-            preconditions = op_data['preconditions']
-            postconditions = op_data['postconditions']
-            operator = Operator(name, preconditions, postconditions)
-            operators[name] = operator
-
-        print(f"Loaded operator for {self.__class__.__name__}: {operators}")
-        return operators
+        pass
 
     @abstractmethod
     def _get_json_filepath(self) -> str:

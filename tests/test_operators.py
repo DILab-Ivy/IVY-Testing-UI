@@ -1,7 +1,7 @@
 import unittest
 import json
 from unittest.mock import mock_open, patch
-from skills.planning.operator.operator import Operator, read_operators_from_json  # Replace with the correct import path
+from skills.planning.operator.operator import Operator  # Replace with the correct import path
 
 
 class TestOperator(unittest.TestCase):

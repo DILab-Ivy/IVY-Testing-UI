@@ -14,6 +14,11 @@ class State(ABC):
         pass
 
     @abstractmethod
+    def reverse_operator(self, operator: 'Operator') -> 'State':
+        """Reverse an operator on the current state to produce a new state"""
+        pass
+
+    @abstractmethod
     def check_if_state_clobbers_operator(self, operator: 'Operator') -> 'State':
         """Check if State conditions clobber Operator preconditions"""
         pass
