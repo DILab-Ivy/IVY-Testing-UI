@@ -15,6 +15,11 @@ class Operator:
     def __repr__(self):
         return f"Operator(name={self.name}, preconditions={self.preconditions}, postconditions={self.postconditions})"
 
+    def check_if_operator_matches_goal_condition(self, goal_condition: str):
+        if goal_condition in self.postconditions:
+            return True
+        return False
+
     @abstractmethod
     def _get_precondition_for_reverse_search(self) -> str:
         """Abstract method to get the JSON file path for the operator."""

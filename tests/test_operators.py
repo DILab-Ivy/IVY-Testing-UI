@@ -34,6 +34,29 @@ class TestOperator(unittest.TestCase):
         expected_repr = "Operator(name=paint-ceiling, preconditions=['On(Robot, Ladder)'], postconditions=['Painted(Ceiling)'])"
         self.assertEqual(repr(operator), expected_repr)
 
+    def test_check_if_operator_matches_goal_condition(self):
+        # Test case 1: Operator with postconditions that include the goal condition
+        operator1 = Operator(
+            name="paint-ceiling",
+            preconditions=["On(Robot, Ladder)", "Has(Paint)"],
+            postconditions=["Painted(Ceiling)", "¬Dry(Ceiling)"]
+        )
+
+        # Check if the goal condition is in the postconditions
+        self.assertTrue(operator1.check_if_operator_matches_goal_condition("Painted(Ceiling)"))
+        self.assertFalse(operator1.check_if_operator_matches_goal_condition("Painted(Ladder)"))
+
+        # Test case 2: Operator with postconditions that do not include the goal condition
+        operator2 = Operator(
+            name="paint-ladder",
+            preconditions=["On(Robot, Floor)", "Has(Paint)"],
+            postconditions=["Painted(Ladder)", "¬Dry(Ladder)"]
+        )
+
+        # Check if the goal condition is in the postconditions
+        self.assertTrue(operator2.check_if_operator_matches_goal_condition("Painted(Ladder)"))
+        self.assertFalse(operator2.check_if_operator_matches_goal_condition("Painted(Ceiling)"))
+
     def test_get_precondition_for_reverse_search(self):
         # Test case where the precondition list includes 'On(Robot, ...)' conditions
         operator = RobotPaintingOperator(

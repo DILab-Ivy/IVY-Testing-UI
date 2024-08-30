@@ -1,8 +1,8 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import copy
 
 class Plan:
-    def __init__(self, start_state: 'State', goal_condition: str, steps: List[Tuple[str, str]], priority: int):
+    def __init__(self, start_state: 'State', goal_condition: str, operators: Dict[str, 'Operator']):
         """
         Initialize a plan with a goal, a list of steps, and a priority score.
 
@@ -16,9 +16,11 @@ class Plan:
         self.state_steps = [start_state]
         # self.priority = priority
         goal_c = goal_condition
-        curr_state = deep_copy = copy.deepcopy(start_state)
-        while curr_state.check_if_state_matches_operator(goal_c) == False:
-            pass
+        curr_state = copy.deepcopy(start_state)
+        while not curr_state.check_if_state_matches_operator(goal_c):
+            for i, op in enumerate(operators):
+                pass
+                # if
 
     def __repr__(self):
         return f"Plan(goal={self.goal_condition}, operator_steps={self.operator_steps}, state_steps={self.state_steps})"
