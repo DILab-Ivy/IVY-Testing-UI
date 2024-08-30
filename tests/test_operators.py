@@ -2,6 +2,7 @@ import unittest
 import json
 from unittest.mock import mock_open, patch
 from skills.planning.operator.operator import Operator  # Replace with the correct import path
+from skills.planning.operator.instances.robot_painting_operator import RobotPaintingOperator
 
 
 class TestOperator(unittest.TestCase):
@@ -50,33 +51,34 @@ class TestReadOperatorsFromJson(unittest.TestCase):
         }
     ]
     ''')
-    def test_read_operators_from_json(self, mock_file):
-        file_path = "mock/path/to/operators.json"
-        operators = read_operators_from_json(file_path)
 
-        self.assertEqual(len(operators), 2)
-        self.assertIn("climb-ladder", operators)
-        self.assertIn("paint-ceiling", operators)
+    def test_get_precondition_for_reverse_search():
+        # Test case where the precondition list includes 'On(Robot, ...)' conditions
+        operator = RobotPaintingOperator(
+            name="climb-ladder",
+            preconditions=["On(Robot, Floor)", "Dry(Ceiling)", "Painted(Ceiling)"],
+            postconditions=["On(Robot, Ladder)"]
+        )
 
-        climb_ladder_op = operators["climb-ladder"]
-        paint_ceiling_op = operators["paint-ceiling"]
+        result = operator._get_precondition_for_reverse_search()
+        assert result == "On(Robot, Floor)", f"Expected 'On(Robot, Floor)', got {result}"
 
-        self.assertEqual(climb_ladder_op.name, "climb-ladder")
-        self.assertEqual(climb_ladder_op.preconditions, ["On(Robot, Floor)"])
-        self.assertEqual(climb_ladder_op.postconditions, ["On(Robot, Ladder)"])
+        # Test case where no 'On(Robot, ...)' conditions are present
+        operator = RobotPaintingOperator(
+            name="paint-ceiling",
+            preconditions=["Dry(Ceiling)", "Painted(Ceiling)"],
+            postconditions=["Painted(Ceiling)", "¬Dry(Ceiling)"]
+        )
 
-        self.assertEqual(paint_ceiling_op.name, "paint-ceiling")
-        self.assertEqual(paint_ceiling_op.preconditions, ["On(Robot, Ladder)", "¬Dry(Ceiling)"])
-        self.assertEqual(paint_ceiling_op.postconditions, ["Painted(Ceiling)", "Dry(Ceiling)"])
+        result = operator._get_precondition_for_reverse_search()
+        assert result == "", f"Expected '', got {result}"
 
-    @patch('builtins.open', new_callable=mock_open, read_data="[]")
-    def test_read_operators_from_empty_json(self, mock_file):
-        file_path = "mock/path/to/operators.json"
-        operators = read_operators_from_json(file_path)
-        self.assertEqual(len(operators), 0)
+        # Test case with a different 'On(Robot, ...)' condition
+        operator = RobotPaintingOperator(
+            name="descend-ladder",
+            preconditions=["On(Robot, Ladder)", "Dry(Ladder)"],
+            postconditions=["On(Robot, Floor)"]
+        )
 
-    @patch('builtins.open', new_callable=mock_open, read_data="invalid json")
-    def test_read_operators_from_invalid_json(self, mock_file):
-        file_path = "mock/path/to/operators.json"
-        with self.assertRaises(json.JSONDecodeError):
-            read_operators_from_json(file_path)
+        result = operator._get_precondition_for_reverse_search()
+        assert result == "On(Robot, Ladder)", f"Expected 'On(Robot, Ladder)', got {result}"

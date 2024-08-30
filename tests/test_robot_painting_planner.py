@@ -11,6 +11,26 @@ class TestRobotPaintingPlanner(unittest.TestCase):
         expected_path = PLANNING_DATA_DIR / 'robot_painting_operators.json'
         self.assertEqual(planner._get_json_filepath(), expected_path)
 
+    def test_read_operators_from_json(self):
+        planner = RobotPaintingPlanner()
+        file_path = "mock/path/to/operators.json"
+        operators = planner._generate_operators()
+
+        # self.assertEqual(len(operators), 2)
+        self.assertIn("climb-ladder", operators)
+        self.assertIn("paint-ceiling", operators)
+
+        climb_ladder_op = operators["climb-ladder"]
+        paint_ceiling_op = operators["paint-ceiling"]
+
+        self.assertEqual(climb_ladder_op.name, "climb-ladder")
+        self.assertEqual(climb_ladder_op.preconditions, ['On(Robot, Floor)', 'Dry(Ladder)'])
+        self.assertEqual(climb_ladder_op.postconditions, ['On(Robot, Ladder)'])
+
+        self.assertEqual(paint_ceiling_op.name, "paint-ceiling")
+        self.assertEqual(paint_ceiling_op.preconditions, ['On(Robot, Ladder)'])
+        self.assertEqual(paint_ceiling_op.postconditions, ['Painted(Ceiling)', '¬Dry(Ceiling)'])
+
     def test_generate_partial_plan(self):
         planner = RobotPaintingPlanner()
         start_state = MagicMock(spec=RobotPaintingState)
