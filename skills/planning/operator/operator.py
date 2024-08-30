@@ -8,6 +8,7 @@ class Operator:
         self.name = name
         self.preconditions = preconditions
         self.postconditions = postconditions
+        self.dynamic = False #TODO: Blockworld will need dynamic Operators that can update based on context, Robot won't need these
         self.precondition_for_reverse_search = self._get_precondition_for_reverse_search()
         # self.precondition_for_conflict_check = self._get_precondition_for_conflict_check()
 
