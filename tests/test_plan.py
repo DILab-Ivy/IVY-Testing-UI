@@ -31,6 +31,41 @@ class TestPlan(unittest.TestCase):
         # # Check if the last state matches the expected goal state format
         # self.assertEqual(plan.state_steps[-1].format_state(), "On(Robot, Ladder) ^ Painted(Ceiling) ^ ¬Dry(Ceiling) ^ Dry(Ladder)")
 
+    def test_plan_with_goal_painted_ladder(self):
+        # Test creating a plan with the goal condition "Painted(Ladder)"
+        plan = Plan(self.start_state, "Painted(Ladder)", self.operators)
+        plan_string = str(plan)
+        expected_plan_string = "Plan(goal=Painted(Ladder), operator_steps=[Operator(name=paint-ladder, preconditions=['On(Robot, Floor)'], postconditions=['Painted(Ladder)', '¬Dry(Ladder)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Painted(Ladder) ^ ¬Dry(Ladder)])"
+        self.assertEqual(plan.primary_goal, "Painted(Ladder)")
+        self.assertIn(plan_string, expected_plan_string)
+
+    def test_plan_with_goal_painted_ladder_alternate_start_state(self):
+        self.start_state = RobotPaintingState(
+            robot_position=RobotPosition.ON_LADDER,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.DRY}
+        )
+        # Test creating a plan with the goal condition "Painted(Ladder)"
+        plan = Plan(self.start_state, "Painted(Ladder)", self.operators)
+        plan_string = str(plan)
+        expected_plan_string = "Plan(goal=Painted(Ladder), operator_steps=[Operator(name=descend-ladder, preconditions=['On(Robot, Ladder)', 'Dry(Ladder)'], postconditions=['On(Robot, Floor)']), Operator(name=paint-ladder, preconditions=['On(Robot, Floor)'], postconditions=['Painted(Ladder)', '¬Dry(Ladder)'])], state_steps=[On(Robot, Ladder) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Painted(Ladder) ^ ¬Dry(Ladder)])"
+        self.assertEqual(plan.primary_goal, "Painted(Ladder)")
+        self.assertIn(plan_string, expected_plan_string)
+
+    def test_plan_with_goal_painted_ceiling_impossible_start_state(self):
+        self.start_state = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.PAINTED}
+        )
+
+        # Make sure that error is thrown since plan isn't possible
+        # TODO: note, the operator list is being built and the error is being thrown
+        #  when the state list is created through error handling in
+        #  State.apply_operator this could maybe be handled in a better fashion
+        with self.assertRaises(ValueError):
+            Plan(self.start_state, "Painted(Ceiling)", self.operators)
+
     # def test_plan_with_goal_painted_floor(self):
     #     # Test creating a plan with the goal condition "Painted(Floor)"
     #     plan = Plan(self.start_state, "Painted(Floor)", self.operators)

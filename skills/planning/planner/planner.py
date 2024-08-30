@@ -20,17 +20,14 @@ class Planner(ABC):
         """Abstract method to get the JSON file path for the operator."""
         pass
 
-    @abstractmethod
     def generate_partial_plan(self, start_state: State, goal_condition: str) -> str:
         """Generate a plan from start_state to a goal_state satisfying a single goal condition"""
         pass
 
-    @abstractmethod
     def reorder_partial_plans(self, plans: Dict) -> List[str]:
         """Reorder actions to avoid obstacles."""
         pass
 
-    @abstractmethod
     def generate_complete_plan(self, start_state: State, goal_state: State) -> str:
         """
         Generate a complete plan using the generate_plan, reorder_to_avoid,
