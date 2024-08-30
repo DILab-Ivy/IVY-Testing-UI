@@ -63,6 +63,51 @@ class TestRobotPaintingState(unittest.TestCase):
         self.assertIn(Status.NOT_DRY, state.ladder_status)
         self.assertNotIn(Status.DRY, state.ladder_status)
 
+    def test_generate_condition_set(self):
+        # Test case 1: Robot on floor, ceiling dry, ladder painted and not dry
+        state1 = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.PAINTED, Status.NOT_DRY}
+            # Since "¬Dry(Ladder)" is here, "Painted(Ladder)" should also be here
+        )
+        expected_conditions1 = {"On(Robot, Floor)", "Dry(Ceiling)", "Painted(Ladder)", "¬Dry(Ladder)"}
+        self.assertEqual(state1.condition_set, expected_conditions1)
+
+        # Test case 2: Robot on ladder, ceiling painted and not dry, ladder dry
+        state2 = RobotPaintingState(
+            robot_position=RobotPosition.ON_LADDER,
+            ceiling_status={Status.PAINTED, Status.NOT_DRY},  # "¬Dry(Ceiling)" requires "Painted(Ceiling)"
+            ladder_status={Status.DRY}
+        )
+        expected_conditions2 = {"On(Robot, Ladder)", "Painted(Ceiling)", "¬Dry(Ceiling)", "Dry(Ladder)"}
+        self.assertEqual(state2.condition_set, expected_conditions2)
+
+        # Test case 3: Robot on ladder, ceiling and ladder are both painted and not dry
+        state3 = RobotPaintingState(
+            robot_position=RobotPosition.ON_LADDER,
+            ceiling_status={Status.PAINTED, Status.NOT_DRY},
+            ladder_status={Status.PAINTED, Status.NOT_DRY}
+        )
+        expected_conditions3 = {
+            "On(Robot, Ladder)",
+            "Painted(Ceiling)",
+            "¬Dry(Ceiling)",
+            "Painted(Ladder)",
+            "¬Dry(Ladder)"
+        }
+        self.assertEqual(state3.condition_set, expected_conditions3)
+
+        # Test case 4: Robot on floor, ceiling not dry, ladder dry
+        state4 = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.NOT_DRY, Status.PAINTED},
+            # Since "¬Dry(Ceiling)" is here, "Painted(Ceiling)" should also be here
+            ladder_status={Status.DRY}
+        )
+        expected_conditions4 = {"On(Robot, Floor)", "Painted(Ceiling)", "¬Dry(Ceiling)", "Dry(Ladder)"}
+        self.assertEqual(state4.condition_set, expected_conditions4)
+
     def test_is_goal_state_true(self):
         state1 = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
         state2 = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})

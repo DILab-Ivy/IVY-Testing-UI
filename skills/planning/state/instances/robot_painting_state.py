@@ -20,6 +20,8 @@ class RobotPaintingState(State):
 
         # Clean up status on initialization
         self.sync_painted_dry_status()
+        # Generate the initial condition set
+        self.generate_condition_set()
 
     @classmethod
     def from_conditions_list(cls, conditions: List[str]) -> 'RobotPaintingState':
@@ -88,6 +90,9 @@ class RobotPaintingState(State):
         # Ensure the state is consistent
         state.sync_painted_dry_status()
 
+        # Reset conditions set
+        state.generate_condition_set()
+
         return state
 
     def sync_painted_dry_status(self):
@@ -101,6 +106,35 @@ class RobotPaintingState(State):
         if Status.PAINTED in self.ladder_status or Status.NOT_DRY in self.ladder_status:
             self.ladder_status.discard(Status.DRY)  # Remove dry if it's painted or not dry
             self.ladder_status.update({Status.PAINTED, Status.NOT_DRY})  # Ensure both painted and not dry are present
+
+    def generate_condition_set(self):
+        """Generate and store the set of string representations for all conditions in the state."""
+        conditions = set()
+
+        # Add the robot position condition
+        if self.robot_position == RobotPosition.ON_FLOOR:
+            conditions.add("On(Robot, Floor)")
+        elif self.robot_position == RobotPosition.ON_LADDER:
+            conditions.add("On(Robot, Ladder)")
+
+        # Add ceiling status conditions
+        if Status.PAINTED in self.ceiling_status:
+            conditions.add("Painted(Ceiling)")
+        if Status.DRY in self.ceiling_status:
+            conditions.add("Dry(Ceiling)")
+        if Status.NOT_DRY in self.ceiling_status:
+            conditions.add("¬Dry(Ceiling)")
+
+        # Add ladder status conditions
+        if Status.PAINTED in self.ladder_status:
+            conditions.add("Painted(Ladder)")
+        if Status.DRY in self.ladder_status:
+            conditions.add("Dry(Ladder)")
+        if Status.NOT_DRY in self.ladder_status:
+            conditions.add("¬Dry(Ladder)")
+
+        # Update the condition set on the state
+        self.condition_set = conditions
 
     # TODO: set this with Planner if appropriate so that the planner.operators can be used rather than duplicating precondition data definition here
     def get_condition_checks(self) -> Dict[str, Callable[[], bool]]:
@@ -152,6 +186,7 @@ class RobotPaintingState(State):
 
         new_state = RobotPaintingState(new_robot_position, new_ceiling_status, new_ladder_status)
         new_state.sync_painted_dry_status()
+        new_state.generate_condition_set()
         return new_state
 
     def check_if_state_clobbers_operator(self, operator: 'Operator') -> bool:
@@ -176,6 +211,17 @@ class RobotPaintingState(State):
         if precondition == condition:
             return True
         return False
+
+    # def check_if_state_matches_goal_condition(self, goal_condition: str) -> bool:
+    #     """Check if State conditions match provided Operator preconditions using condition checks."""
+    #     if self.robot_position == RobotPosition.ON_FLOOR:
+    #         condition = "On(Robot, Floor)"
+    #     else:
+    #         condition = "On(Robot, Ladder)"
+    #     precondition = operator.precondition_for_reverse_search #ensuring just a single precondition for MVP simplicity # TODO: add multiple precondition handling
+    #     if precondition == condition:
+    #         return True
+    #     return False
 
     def return_eligible_goal_conditions(self) -> List[str]:
         """Returns list of conditions that are eligible for partial order plan"""

@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import copy
 
 class Plan:
     def __init__(self, start_state: 'State', goal_condition: str, steps: List[Tuple[str, str]], priority: int):
@@ -10,16 +11,21 @@ class Plan:
         :param priority: The priority score of the plan.
         """
         self.start_state = start_state
-        self.goal_condition = goal_condition
-        self.steps = steps  # List of tuples ('preceding_state', 'operator')
-        self.priority = priority
+        self.primary_goal = goal_condition
+        self.operator_steps = []
+        self.state_steps = [start_state]
+        # self.priority = priority
+        goal_c = goal_condition
+        curr_state = deep_copy = copy.deepcopy(start_state)
+        while curr_state.check_if_state_matches_operator(goal_c) == False:
+            pass
 
     def __repr__(self):
-        return f"Plan(goal={self.goal_condition}, priority={self.priority}, steps={self.steps})"
+        return f"Plan(goal={self.goal_condition}, operator_steps={self.operator_steps}, state_steps={self.state_steps})"
 
-    def __lt__(self, other: 'Plan') -> bool:
-        """Less than operator for sorting plans by priority."""
-        return self.priority < other.priority
+    # def __lt__(self, other: 'Plan') -> bool:
+    #     """Less than operator for sorting plans by priority."""
+    #     return self.priority < other.priority
 
     # def get_start_state(self) -> str:
     #     """Return the initial state of the plan."""
@@ -33,19 +39,19 @@ class Plan:
     #     """Return the final state of the plan."""
     #     return self.steps[-1][0] if self.steps else None
 
-    def execute(self):
-        """Simulate executing the plan by iterating over steps."""
-        for state, operator in self.steps:
-            print(f"Executing {operator} in state {state}")
+    # def execute(self):
+    #     """Simulate executing the plan by iterating over steps."""
+    #     for state, operator in self.steps:
+    #         print(f"Executing {operator} in state {state}")
 
-    def add_step(self, preceding_state: str, operator: str):
-        """Add a step to the plan."""
-        self.steps.append((preceding_state, operator))
+    # def add_step(self, preceding_state: str, operator: str):
+    #     """Add a step to the plan."""
+    #     self.steps.append((preceding_state, operator))
 
-    def get_plan_summary(self) -> List[str]:
-        """Return a summary of the plan from start to goal state."""
-        summary = ["start"]
-        for state, operator in self.steps:
-            summary.append(f"{state} -> {operator}")
-        summary.append("end")
-        return summary
+    # def get_plan_summary(self) -> List[str]:
+    #     """Return a summary of the plan from start to goal state."""
+    #     summary = ["start"]
+    #     for state, operator in self.steps:
+    #         summary.append(f"{state} -> {operator}")
+    #     summary.append("end")
+    #     return summary
