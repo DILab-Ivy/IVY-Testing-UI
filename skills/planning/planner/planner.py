@@ -2,6 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import List, Dict
 import json
+
+from skills.planning.plan import Plan
 from skills.planning.operator.operator import Operator
 from skills.planning.state.state import State
 
@@ -9,6 +11,7 @@ from skills.planning.state.state import State
 class Planner(ABC):
     def __init__(self):
         self.operators = self._generate_operators()
+        self.partial_plans = []
 
     @abstractmethod
     def _generate_operators(self) -> Dict[str, 'Operator']:
@@ -20,9 +23,11 @@ class Planner(ABC):
         """Abstract method to get the JSON file path for the operator."""
         pass
 
-    def generate_partial_plan(self, start_state: State, goal_condition: str) -> str:
+    def build_partial_plan(self, start_state: State, goal_condition: str) -> str:
         """Generate a plan from start_state to a goal_state satisfying a single goal condition"""
-        pass
+        partial_plan = Plan(start_state, goal_condition, self.operators)
+        self.partial_plans.append(partial_plan)
+        return partial_plan
 
     def reorder_partial_plans(self, plans: Dict) -> List[str]:
         """Reorder actions to avoid obstacles."""

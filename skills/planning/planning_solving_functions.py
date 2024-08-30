@@ -38,7 +38,7 @@ def generate_plan(problem_type: str, start_state_conditions: str, goal_state_con
     start_state = get_state_object(problem_type, start_state_conditions)
     goal_state = get_state_object(problem_type, goal_state_conditions)
 
-    return planner.generate_partial_plan(start_state, goal_state)
+    return planner.build_partial_plan(start_state, goal_state)
 
 def reorder_to_avoid(problem_type: str, plans: List[List[str]]):
     planner = get_planner(problem_type)

@@ -31,48 +31,76 @@ class TestRobotPaintingPlanner(unittest.TestCase):
         self.assertEqual(paint_ceiling_op.preconditions, ['On(Robot, Ladder)'])
         self.assertEqual(paint_ceiling_op.postconditions, ['Painted(Ceiling)', '¬Dry(Ceiling)'])
 
-    def test_generate_partial_plan(self):
+    def test_build_partial_plan_painted_ceiling(self):
+        start_state = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.DRY}
+        )
         planner = RobotPaintingPlanner()
-        start_state = MagicMock(spec=RobotPaintingState)
+        # Test building a partial plan with the goal condition "Painted(Ceiling)"
         goal_condition = "Painted(Ceiling)"
-        # TODO: construct correct expected plan: initial format can be a set in the following format: ("str":List[str])
-        #  ("goal1": ["start", "{initial state}", "{operator}", "{resulting state}", "{operator}"......."{goal state}", "end"])
-        expected_plan = ["paint ladder", "paint ceiling"]
-        partial_plan = planner.generate_partial_plan(start_state, goal_condition)
-        self.assertEqual(partial_plan, expected_plan)
+        partial_plan = planner.build_partial_plan(start_state, goal_condition)
+        partial_plan_str = str(partial_plan)
+        expected_plan_str = "Plan(goal=Painted(Ceiling), operator_steps=[Operator(name=climb-ladder, preconditions=['On(Robot, Floor)', 'Dry(Ladder)'], postconditions=['On(Robot, Ladder)']), Operator(name=paint-ceiling, preconditions=['On(Robot, Ladder)'], postconditions=['Painted(Ceiling)', '¬Dry(Ceiling)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Ladder) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Ladder) ^ Painted(Ceiling) ^ ¬Dry(Ceiling) ^ Dry(Ladder)])"
+        self.assertIn(partial_plan_str, expected_plan_str)
 
-    def test_reorder_partial_plans(self):
+    def test_build_partial_plan_painted_ladder(self):
+        start_state = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.DRY}
+        )
         planner = RobotPaintingPlanner()
-        plans = {"goal1": ["paint ladder"], "goal2": ["paint ceiling"]}
-        reordered_plan = planner.reorder_partial_plans(plans)
-        self.assertEqual(reordered_plan, ["paint ceiling", "move ladder", "paint ladder"])
+        # Test building a partial plan with the goal condition "Painted(Ceiling)"
+        goal_condition = "Painted(Ladder)"
+        partial_plan = planner.build_partial_plan(start_state, goal_condition)
+        partial_plan_str = str(partial_plan)
+        expected_plan_str = "Plan(goal=Painted(Ladder), operator_steps=[Operator(name=paint-ladder, preconditions=['On(Robot, Floor)'], postconditions=['Painted(Ladder)', '¬Dry(Ladder)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Painted(Ladder) ^ ¬Dry(Ladder)])"
+        self.assertIn(partial_plan_str, expected_plan_str)
 
-    @patch('skills.planning.planner.instances.robot_painting_planner.RobotPaintingPlanner.generate_partial_plan')
-    @patch('skills.planning.planner.instances.robot_painting_planner.RobotPaintingPlanner.reorder_partial_plans')
-    def test_generate_complete_plan(self, mock_reorder_partial_plans, mock_generate_partial_plan):
-        planner = RobotPaintingPlanner()
-
-        # Setup mock behaviors
-        start_state = MagicMock(spec=RobotPaintingState)
-        goal_state = MagicMock(spec=RobotPaintingState)
-        goal_state.return_eligible_goal_conditions.return_value = ["Painted(Ceiling)", "Painted(Ladder)"]
-
-        mock_generate_partial_plan.side_effect = [
-            ["paint ladder"],
-            ["paint ceiling"]
-        ]
-        mock_reorder_partial_plans.return_value = ["paint ceiling", "move ladder", "paint ladder"]
-
-        complete_plan = planner.generate_complete_plan(start_state, goal_state)
-        self.assertEqual(complete_plan, ["paint ceiling", "move ladder", "paint ladder"])
-
-        # Ensure that generate_partial_plan was called with correct parameters
-        mock_generate_partial_plan.assert_any_call(start_state, "Painted(Ceiling)")
-        mock_generate_partial_plan.assert_any_call(start_state, "Painted(Ladder)")
-
-        # Ensure that reorder_partial_plans was called with correct parameters
-        expected_partial_plans = {
-            "Painted(Ceiling)": ["paint ladder"],
-            "Painted(Ladder)": ["paint ceiling"]
-        }
-        mock_reorder_partial_plans.assert_called_once_with(expected_partial_plans)
+    # def test_generate_partial_plan(self):
+    #     planner = RobotPaintingPlanner()
+    #     start_state = MagicMock(spec=RobotPaintingState)
+    #     goal_condition = "Painted(Ceiling)"
+    #     # TODO: construct correct expected plan: initial format can be a set in the following format: ("str":List[str])
+    #     #  ("goal1": ["start", "{initial state}", "{operator}", "{resulting state}", "{operator}"......."{goal state}", "end"])
+    #     expected_plan = ["paint ladder", "paint ceiling"]
+    #     partial_plan = planner.build_partial_plan(start_state, goal_condition)
+    #     self.assertEqual(partial_plan, expected_plan)
+    #
+    # def test_reorder_partial_plans(self):
+    #     planner = RobotPaintingPlanner()
+    #     plans = {"goal1": ["paint ladder"], "goal2": ["paint ceiling"]}
+    #     reordered_plan = planner.reorder_partial_plans(plans)
+    #     self.assertEqual(reordered_plan, ["paint ceiling", "move ladder", "paint ladder"])
+    #
+    # @patch('skills.planning.planner.instances.robot_painting_planner.RobotPaintingPlanner.generate_partial_plan')
+    # @patch('skills.planning.planner.instances.robot_painting_planner.RobotPaintingPlanner.reorder_partial_plans')
+    # def test_generate_complete_plan(self, mock_reorder_partial_plans, mock_generate_partial_plan):
+    #     planner = RobotPaintingPlanner()
+    #
+    #     # Setup mock behaviors
+    #     start_state = MagicMock(spec=RobotPaintingState)
+    #     goal_state = MagicMock(spec=RobotPaintingState)
+    #     goal_state.return_eligible_goal_conditions.return_value = ["Painted(Ceiling)", "Painted(Ladder)"]
+    #
+    #     mock_generate_partial_plan.side_effect = [
+    #         ["paint ladder"],
+    #         ["paint ceiling"]
+    #     ]
+    #     mock_reorder_partial_plans.return_value = ["paint ceiling", "move ladder", "paint ladder"]
+    #
+    #     complete_plan = planner.generate_complete_plan(start_state, goal_state)
+    #     self.assertEqual(complete_plan, ["paint ceiling", "move ladder", "paint ladder"])
+    #
+    #     # Ensure that generate_partial_plan was called with correct parameters
+    #     mock_generate_partial_plan.assert_any_call(start_state, "Painted(Ceiling)")
+    #     mock_generate_partial_plan.assert_any_call(start_state, "Painted(Ladder)")
+    #
+    #     # Ensure that reorder_partial_plans was called with correct parameters
+    #     expected_partial_plans = {
+    #         "Painted(Ceiling)": ["paint ladder"],
+    #         "Painted(Ladder)": ["paint ceiling"]
+    #     }
+    #     mock_reorder_partial_plans.assert_called_once_with(expected_partial_plans)

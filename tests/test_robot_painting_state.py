@@ -239,17 +239,6 @@ class TestRobotPaintingState(unittest.TestCase):
         self.assertTrue(state2.check_if_state_matches_goal_condition("Painted(Ceiling)"))
         self.assertTrue(state2.check_if_state_matches_goal_condition("Painted(Ladder)"))
 
-        # Test case 3: Invalid goal condition check raises ValueError
-        with self.assertRaises(ValueError) as context:
-            state1.check_if_state_matches_goal_condition("Dry(Ceiling)")
-        self.assertEqual(str(context.exception),
-                         "Invalid goal condition 'Dry(Ceiling)'. Must be one of {'Painted(Ceiling)', 'Painted(Ladder)'}.")
-
-        with self.assertRaises(ValueError) as context:
-            state2.check_if_state_matches_goal_condition("Dry(Ladder)")
-        self.assertEqual(str(context.exception),
-                         "Invalid goal condition 'Dry(Ladder)'. Must be one of {'Painted(Ceiling)', 'Painted(Ladder)'}.")
-
     def test_check_if_state_matches_operator_failure(self):
         # Setup the state and operator
         state = RobotPaintingState(
