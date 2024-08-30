@@ -34,25 +34,7 @@ class TestOperator(unittest.TestCase):
         expected_repr = "Operator(name=paint-ceiling, preconditions=['On(Robot, Ladder)'], postconditions=['Painted(Ceiling)'])"
         self.assertEqual(repr(operator), expected_repr)
 
-
-class TestReadOperatorsFromJson(unittest.TestCase):
-
-    @patch('builtins.open', new_callable=mock_open, read_data='''
-    [
-        {
-            "name": "climb-ladder",
-            "preconditions": ["On(Robot, Floor)"],
-            "postconditions": ["On(Robot, Ladder)"]
-        },
-        {
-            "name": "paint-ceiling",
-            "preconditions": ["On(Robot, Ladder)", "¬Dry(Ceiling)"],
-            "postconditions": ["Painted(Ceiling)", "Dry(Ceiling)"]
-        }
-    ]
-    ''')
-
-    def test_get_precondition_for_reverse_search():
+    def test_get_precondition_for_reverse_search(self):
         # Test case where the precondition list includes 'On(Robot, ...)' conditions
         operator = RobotPaintingOperator(
             name="climb-ladder",
@@ -82,3 +64,5 @@ class TestReadOperatorsFromJson(unittest.TestCase):
 
         result = operator._get_precondition_for_reverse_search()
         assert result == "On(Robot, Ladder)", f"Expected 'On(Robot, Ladder)', got {result}"
+
+
