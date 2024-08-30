@@ -29,8 +29,16 @@ class Planner(ABC):
         self.partial_plans.append(partial_plan)
         return partial_plan
 
-    def reorder_partial_plans(self, plans: Dict) -> List[str]:
+    def reorder_partial_plans_list(self, plans: List[Plan]) -> None:
+        """Reorder partial plans list to avoid conflicts."""
+        pass
+
+    def add_plan_to_top_of_list(self, plans: List[Plan]) -> None:
         """Reorder actions to avoid obstacles."""
+        pass
+
+    def slice_partial_plan(self, plan: Plan, start_operator_index: int) -> Plan:
+        """Slices a partial plan down to certain steps and operators based on provided index"""
         pass
 
     def generate_complete_plan(self, start_state: State, goal_state: State) -> str:
