@@ -11,3 +11,10 @@ class RobotPaintingOperator(Operator):
             if precondition.startswith("On(Robot, "):
                 return precondition
         return ""
+
+    def _get_precondition_for_conflict_check(self) -> str:
+        """Returns the first precondition related to 'Dry' or '¬Dry'."""
+        for precondition in self.preconditions:
+            if precondition.startswith("Dry"):
+                return precondition
+        return ""

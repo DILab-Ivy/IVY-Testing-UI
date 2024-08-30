@@ -65,4 +65,16 @@ class TestOperator(unittest.TestCase):
         result = operator._get_precondition_for_reverse_search()
         assert result == "On(Robot, Ladder)", f"Expected 'On(Robot, Ladder)', got {result}"
 
+    def test_get_precondition_for_conflict_check(self):
+        # Test case where the precondition list includes both 'Dry' and '¬Dry' conditions
+        operator = RobotPaintingOperator(
+            name="paint-ceiling",
+            preconditions=["On(Robot, Floor)", "Dry(Ceiling)"],
+            postconditions=["Painted(Ceiling)"]
+        )
+
+        result = operator._get_precondition_for_conflict_check()
+        expected_result = "Dry(Ceiling)"
+        assert result == expected_result, f"Expected '{expected_result}', got '{result}'"
+
 

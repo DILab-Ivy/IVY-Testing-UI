@@ -20,7 +20,7 @@ class Operator:
         """Abstract method to get the JSON file path for the operator."""
         pass
 
-    # @abstractmethod
-    # def _get_precondition_for_conflict_check(self) -> str:
-    #     """Abstract method to get the JSON file path for the operator."""
-    #     pass
+    @abstractmethod
+    def _get_precondition_for_conflict_check(self) -> str:
+        """Abstract method to get the JSON file path for the operator."""
+        pass
