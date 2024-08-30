@@ -154,38 +154,6 @@ class RobotPaintingState(State):
         new_state.sync_painted_dry_status()
         return new_state
 
-    def reverse_operator(self, operator: 'Operator') -> 'RobotPaintingState':
-        """
-        Reverse an operator on the current state to return the state that preceded it before the operator was applied.
-        Raises an error if the operator's postconditions are not met by the current state.
-        """
-        condition_checks = self.get_condition_checks()
-        # Check if each precondition is met
-        for postcondition in operator.postconditions:
-            if postcondition not in condition_checks:
-                raise ValueError(f"Unknown or unsupported postcondition: {postcondition}")
-
-            if not condition_checks[postcondition]():
-                raise ValueError(f"Precondition '{postcondition}' is not met.")
-
-        # If all preconditions are met, apply the operator
-        new_robot_position = self.robot_position
-        new_ceiling_status = self.ceiling_status.copy()
-        new_ladder_status = self.ladder_status.copy()
-
-        if operator.name == "climb-ladder":
-            new_robot_position = RobotPosition.ON_LADDER
-        elif operator.name == "descend-ladder":
-            new_robot_position = RobotPosition.ON_FLOOR
-        elif operator.name == "paint-ceiling":
-            new_ceiling_status = {Status.PAINTED, Status.NOT_DRY}
-        elif operator.name == "paint-ladder":
-            new_ladder_status = {Status.PAINTED, Status.NOT_DRY}
-
-        new_state = RobotPaintingState(new_robot_position, new_ceiling_status, new_ladder_status)
-        new_state.sync_painted_dry_status()
-        return new_state
-
     def check_if_state_clobbers_operator(self, operator: 'Operator') -> bool:
         """Check if the State conditions clobber the Operator preconditions."""
 
@@ -200,14 +168,14 @@ class RobotPaintingState(State):
 
     def check_if_state_matches_operator(self, operator: 'Operator') -> bool:
         """Check if State conditions match provided Operator preconditions using condition checks."""
-        condition_checks = self.get_condition_checks()  # Use instance method to fetch the condition checks
-
-        for precondition in operator.preconditions:
-            # Check if the precondition exists in the condition checks and if it evaluates to True
-            if precondition not in condition_checks or not condition_checks[precondition]():
-                return False
-
-        return True
+        if self.robot_position == RobotPosition.ON_FLOOR:
+            condition = "On(Robot, Floor)"
+        else:
+            condition = "On(Robot, Ladder)"
+        precondition = operator.precondition_for_reverse_search #ensuring just a single precondition for MVP simplicity # TODO: add multiple precondition handling
+        if precondition == condition:
+            return True
+        return False
 
     def return_eligible_goal_conditions(self) -> List[str]:
         """Returns list of conditions that are eligible for partial order plan"""

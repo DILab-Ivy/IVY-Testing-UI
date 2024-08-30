@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState, RobotPosition, Status
-from skills.planning.operator.operator import Operator
+from skills.planning.operator.instances.robot_painting_operator import RobotPaintingOperator
 from enum import Enum, auto
 
 class TestRobotPaintingState(unittest.TestCase):
@@ -75,7 +75,7 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_climb_ladder_success(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.PAINTED}, {Status.DRY})
-        operator = Operator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
+        operator = RobotPaintingOperator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
         new_state = initial_state.apply_operator(operator)
         self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
         self.assertEqual(new_state.ceiling_status, {Status.PAINTED, Status.NOT_DRY})
@@ -83,7 +83,7 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_climb_ladder_failure(self):
         initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.PAINTED}, {Status.DRY})
-        operator = Operator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
+        operator = RobotPaintingOperator(name='climb-ladder', preconditions=["On(Robot, Floor)"], postconditions=[])
 
         with self.assertRaises(ValueError) as context:
             initial_state.apply_operator(operator)
@@ -92,7 +92,7 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_paint_ceiling_success(self):
         initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.DRY}, {Status.DRY})
-        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+        operator = RobotPaintingOperator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
                             postconditions=[])
         new_state = initial_state.apply_operator(operator)
         self.assertEqual(new_state.robot_position, RobotPosition.ON_LADDER)
@@ -101,7 +101,7 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_paint_ceiling_failure_due_to_position(self):
         initial_state = RobotPaintingState(RobotPosition.ON_FLOOR, {Status.DRY}, {Status.DRY})
-        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+        operator = RobotPaintingOperator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
                             postconditions=[])
 
         with self.assertRaises(ValueError) as context:
@@ -111,7 +111,7 @@ class TestRobotPaintingState(unittest.TestCase):
 
     def test_apply_operator_paint_ceiling_failure_due_to_status(self):
         initial_state = RobotPaintingState(RobotPosition.ON_LADDER, {Status.NOT_DRY}, {Status.DRY})
-        operator = Operator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
+        operator = RobotPaintingOperator(name='paint-ceiling', preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
                             postconditions=[])
 
         with self.assertRaises(ValueError) as context:
@@ -128,7 +128,7 @@ class TestRobotPaintingState(unittest.TestCase):
         )
 
         # Create an operator that will be clobbered by the state
-        operator = Operator(
+        operator = RobotPaintingOperator(
             name="climb-ladder",
             preconditions=["On(Robot, Floor)"],
             postconditions=["On(Robot, Ladder)"]
@@ -162,7 +162,7 @@ class TestRobotPaintingState(unittest.TestCase):
             {Status.PAINTED, Status.NOT_DRY},
             {Status.DRY}
         )
-        operator = Operator(
+        operator = RobotPaintingOperator(
             name="climb-ladder",
             preconditions=["On(Robot, Floor)", "Dry(Ladder)"],
             postconditions=["On(Robot, Ladder)"]  # Defined postconditions, even if not used in this test
@@ -174,11 +174,11 @@ class TestRobotPaintingState(unittest.TestCase):
     def test_check_if_state_matches_operator_failure(self):
         # Setup the state and operator
         state = RobotPaintingState(
-            RobotPosition.ON_LADDER,
+            RobotPosition.ON_FLOOR,
             {Status.NOT_DRY},
             {Status.DRY}
         )
-        operator = Operator(
+        operator = RobotPaintingOperator(
             name="paint-ceiling",
             preconditions=["On(Robot, Ladder)", "Dry(Ceiling)"],
             postconditions=["Painted(Ceiling)"]  # Defined postconditions, even if not used in this test
