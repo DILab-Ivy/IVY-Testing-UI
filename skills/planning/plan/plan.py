@@ -14,16 +14,28 @@ class Plan:
         self.primary_goal = goal_condition
         self.operator_steps = []
         self.state_steps = [start_state]
-        # self.priority = priority
         goal_c = goal_condition
         curr_state = copy.deepcopy(start_state)
-        while not curr_state.check_if_state_matches_operator(goal_c):
-            for i, op in enumerate(operators):
-                pass
-                # if
+        while not curr_state.check_if_state_matches_goal_condition(goal_c):
+            for i, op in enumerate(operators.keys()):
+                if operators[op].check_if_operator_matches_goal_condition(goal_c):
+                    self.operator_steps.append(operators[op])
+                    goal_c = operators[op].precondition_for_reverse_search # TODO: restricting to just one precondtion for now, but could be expanded to handle multiple - would require refactor to allow for search branching
+                    break
+                else:
+                    if i == len(operators.keys()) - 1:
+                        raise LookupError(f"No operator found with postconditions matching the goal condition '{goal_c}'.")
+
+        # Operator list was constructed with a reverse search, so it should be flipped to go from start state to goal
+        self.operator_steps.reverse()
+
+        # Now we can construct State step list
+        for op in self.operator_steps:
+            curr_state = curr_state.apply_operator(op)
+            self.state_steps.append(copy.deepcopy(curr_state))
 
     def __repr__(self):
-        return f"Plan(goal={self.goal_condition}, operator_steps={self.operator_steps}, state_steps={self.state_steps})"
+        return f"Plan(goal={self.primary_goal}, operator_steps={self.operator_steps}, state_steps={self.state_steps})"
 
     # def __lt__(self, other: 'Plan') -> bool:
     #     """Less than operator for sorting plans by priority."""

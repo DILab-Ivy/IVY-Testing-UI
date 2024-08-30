@@ -211,13 +211,6 @@ class RobotPaintingState(State):
 
     def check_if_state_matches_goal_condition(self, goal_condition: str) -> bool:
         """Check if State conditions match provided Operator preconditions using condition checks."""
-        # Define the valid painting-related goal conditions
-        valid_goal_conditions = {"Painted(Ceiling)", "Painted(Ladder)"}
-
-        # Check if the goal condition is a valid painting condition
-        if goal_condition not in valid_goal_conditions:
-            raise ValueError(f"Invalid goal condition '{goal_condition}'. Must be one of {valid_goal_conditions}.")
-
         # Check if the goal in condition set
         if goal_condition in self.condition_set:
             return True

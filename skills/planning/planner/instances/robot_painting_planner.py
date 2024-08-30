@@ -3,6 +3,7 @@ import json
 from typing import List, Dict
 
 from skills.planning import Operator
+from skills.planning.operator.instances import RobotPaintingOperator
 from skills.planning.planner.planner import Planner
 from config import PLANNING_DATA_DIR
 from skills.planning.state.state import State
@@ -20,7 +21,7 @@ class RobotPaintingPlanner(Planner):
             name = op_data['name']
             preconditions = op_data['preconditions']
             postconditions = op_data['postconditions']
-            operator = Operator(name, preconditions, postconditions)
+            operator = RobotPaintingOperator(name, preconditions, postconditions)
             operators[name] = operator
 
         print(f"Loaded operator for {self.__class__.__name__}: {operators}")
