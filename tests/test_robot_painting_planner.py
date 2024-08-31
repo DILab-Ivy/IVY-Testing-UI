@@ -59,6 +59,20 @@ class TestRobotPaintingPlanner(unittest.TestCase):
         expected_plan_str = "Plan(goal=Painted(Ladder), operator_steps=[Operator(name=paint-ladder, preconditions=['On(Robot, Floor)'], postconditions=['Painted(Ladder)', '¬Dry(Ladder)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Painted(Ladder) ^ ¬Dry(Ladder)])"
         self.assertIn(partial_plan_str, expected_plan_str)
 
+    def test_build_complete_plan(self):
+        start_state = RobotPaintingState(
+            robot_position=RobotPosition.ON_FLOOR,
+            ceiling_status={Status.DRY},
+            ladder_status={Status.DRY}
+        )
+        planner = RobotPaintingPlanner()
+        # Test building a partial plan with the goal condition "Painted(Ceiling)"
+        goal_conditions = ["Painted(Ladder)","Painted(Ceiling)"]
+        complete_plan = planner.build_complete_plan(start_state, goal_conditions)
+        complete_plan_str = str(complete_plan)
+        expected_plan_str = "[Plan(goal=Painted(Ceiling), operator_steps=[Operator(name=climb-ladder, preconditions=['On(Robot, Floor)', 'Dry(Ladder)'], postconditions=['On(Robot, Ladder)']), Operator(name=paint-ceiling, preconditions=['On(Robot, Ladder)'], postconditions=['Painted(Ceiling)', '¬Dry(Ceiling)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Ladder) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Ladder) ^ Painted(Ceiling) ^ ¬Dry(Ceiling) ^ Dry(Ladder)]), Plan(goal=On(Robot, Floor), operator_steps=[Operator(name=descend-ladder, preconditions=['On(Robot, Ladder)', 'Dry(Ladder)'], postconditions=['On(Robot, Floor)'])], state_steps=[On(Robot, Ladder) ^ Painted(Ceiling) ^ ¬Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Painted(Ceiling) ^ ¬Dry(Ceiling) ^ Dry(Ladder)]), Plan(goal=Painted(Ladder), operator_steps=[Operator(name=paint-ladder, preconditions=['On(Robot, Floor)'], postconditions=['Painted(Ladder)', '¬Dry(Ladder)'])], state_steps=[On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder), On(Robot, Floor) ^ Dry(Ceiling) ^ Painted(Ladder) ^ ¬Dry(Ladder)])]"
+        self.assertIn(complete_plan_str, expected_plan_str)
+
     # def test_generate_partial_plan(self):
     #     planner = RobotPaintingPlanner()
     #     start_state = MagicMock(spec=RobotPaintingState)

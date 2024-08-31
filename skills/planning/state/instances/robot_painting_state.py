@@ -190,14 +190,14 @@ class RobotPaintingState(State):
         new_state.generate_condition_set()
         return new_state
 
-    def check_if_state_clobbers_operator(self, operator: 'Operator') -> bool:
+    def check_if_state_clobbers_operator(self, operator_precondition: str) -> bool:
         """Check if the State conditions clobber the Operator preconditions."""
 
         # Check if the ladder is painted and not dry
         ladder_clobber_condition = Status.PAINTED in self.ladder_status and Status.NOT_DRY in self.ladder_status
 
         # Check for the specific operator and conditions
-        if operator.name == "climb-ladder" and ladder_clobber_condition:
+        if operator_precondition == "climb-ladder" and ladder_clobber_condition:
             return True  # The state clobbers the operator because the ladder is painted and not dry
 
         return False  # The state does not clobber the operator

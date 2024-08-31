@@ -52,4 +52,4 @@ def generate_complete_plan(problem_type: str, start_state_conditions, goal_state
     start_state = get_state_object(problem_type, start_state_conditions)
     goal_state = get_state_object(problem_type, goal_state_conditions)
 
-    return planner.generate_complete_plan(start_state, goal_state)
+    return planner.build_complete_plan(start_state, goal_state)

@@ -37,6 +37,9 @@ class Plan:
     def __repr__(self):
         return f"Plan(goal={self.primary_goal}, operator_steps={self.operator_steps}, state_steps={self.state_steps})"
 
+    def get_final_state(self) -> 'State':
+        return self.state_steps[-1]
+
     # def __lt__(self, other: 'Plan') -> bool:
     #     """Less than operator for sorting plans by priority."""
     #     return self.priority < other.priority

@@ -33,6 +33,12 @@ class RobotPaintingPlanner(Planner):
         robot_planning_operators_path = PLANNING_DATA_DIR / 'robot_painting_operators.json'
         return robot_planning_operators_path
 
+    def reorder_partial_plans_list(self) -> None:
+        """Robot painting instance shortcut - reorder to avoid painting ladder before painting ceiling"""
+        if len(self.partial_plans) > 1:
+            if self.partial_plans[0].primary_goal == 'Painted(Ladder)':
+                self.partial_plans[0], self.partial_plans[1] = self.partial_plans[1], self.partial_plans[0]
+
     # def generate_partial_plan(self, start_state: State, goal_condition: str) -> str:
     #     print(f"Generating plan for Robot Painting from {start_state} to goal_state satisfying {goal_condition}")
     #     return ["paint ladder", "paint ceiling"]

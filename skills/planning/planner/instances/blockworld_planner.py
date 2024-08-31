@@ -15,7 +15,7 @@ class BlockWorldPlanner(Planner):
         return ["move C to A", "move B to C"]
 
 
-    def generate_complete_plan(self, start_state, goal_state, obstacles):
+    def build_complete_plan(self, start_state, goal_state, obstacles):
         print("BlockWorldPlanner: Custom complete plan logic")
 
         # Use the loaded operator for additional logic (if needed)
