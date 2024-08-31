@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from skills.planning.planning_solving_functions import get_planner, get_state_object, generate_plan, reorder_to_avoid, generate_complete_plan
+from skills.planning.planning_solving_functions import get_planner, get_state_object, build_partial_plan, reorder_plans_to_avoid_conflicts, build_complete_plan
 from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState
 from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
@@ -48,7 +48,7 @@ class TestDispatcherFunctions(unittest.TestCase):
         start_state_conditions = '[{"condition": "clean", "object": "wall"}]'
         goal_state_conditions = '[{"condition": "painted", "object": "wall"}]'
 
-        plan = generate_plan('robot', start_state_conditions, goal_state_conditions)
+        plan = build_partial_plan('robot', start_state_conditions, goal_state_conditions)
 
         mock_from_conditions_list.assert_called_with(start_state_conditions)
         mock_from_conditions_list.assert_called_with(goal_state_conditions)
@@ -60,7 +60,7 @@ class TestDispatcherFunctions(unittest.TestCase):
         mock_reorder_partial_plans.return_value = [['plan1', 'plan2']]
         plans = [['plan1'], ['plan2']]
 
-        reordered_plans = reorder_to_avoid('robot', plans)
+        reordered_plans = reorder_plans_to_avoid_conflicts('robot', plans)
 
         mock_reorder_partial_plans.assert_called_with(plans)
         self.assertEqual(reordered_plans, [['plan1', 'plan2']])
@@ -75,7 +75,7 @@ class TestDispatcherFunctions(unittest.TestCase):
         start_state_conditions = '[{"condition": "clean", "object": "wall"}]'
         goal_state_conditions = '[{"condition": "painted", "object": "wall"}]'
 
-        complete_plan = generate_complete_plan('robot', start_state_conditions, goal_state_conditions)
+        complete_plan = build_complete_plan('robot', start_state_conditions, goal_state_conditions)
 
         mock_from_conditions_list.assert_called_with(start_state_conditions)
         mock_from_conditions_list.assert_called_with(goal_state_conditions)

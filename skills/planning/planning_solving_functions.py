@@ -28,23 +28,25 @@ def get_state_object(problem_type: str, state_conditions_list: str) -> State:
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
-
+# TODO: implement below 3 functions, set them up in openai_assistant_manager.py and create OAI agent to use them
 # Wrapper functions that use the planner
-def generate_plan(problem_type: str, start_state_conditions: str, goal_state_conditions: str):
-    # Initialize Planner based on problem_type
-    planner = get_planner(problem_type)
+def build_partial_plan(problem_type: str, start_state_conditions: str, goal_state_conditions: str):
+    pass
+    # # Initialize Planner based on problem_type
+    # planner = get_planner(problem_type)
+    #
+    # # Convert conditions string from agent into appropriate State instances based on problem type
+    # start_state = get_state_object(problem_type, start_state_conditions)
+    # goal_state = get_state_object(problem_type, goal_state_conditions)
 
-    # Convert conditions string from agent into appropriate State instances based on problem type
-    start_state = get_state_object(problem_type, start_state_conditions)
-    goal_state = get_state_object(problem_type, goal_state_conditions)
+    # return planner.build_partial_plan(start_state, goal_state)
 
-    return planner.build_partial_plan(start_state, goal_state)
+def reorder_plans_to_avoid_conflicts(problem_type: str, plans: List[List[str]]):
+    # planner = get_planner(problem_type)
+    # return planner.reorder_partial_plans(plans)
+    pass
 
-def reorder_to_avoid(problem_type: str, plans: List[List[str]]):
-    planner = get_planner(problem_type)
-    return planner.reorder_partial_plans(plans)
-
-def generate_complete_plan(problem_type: str, start_state_conditions, goal_state_conditions):
+def build_complete_plan(problem_type: str, start_state_conditions, goal_state_conditions):
     # Initialize Planner based on problem_type
     planner = get_planner(problem_type)
 
