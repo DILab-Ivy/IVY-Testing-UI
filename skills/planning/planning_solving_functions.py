@@ -43,15 +43,18 @@ def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'
     start_state = _get_state_object(problem_type, start_state_conditions)
     result_state = copy.deepcopy(start_state)
 
-    for i, op in enumerate.planner.operators:
+    for i, op in enumerate(planner.operators.keys()):
         if operator == op:
-            result_state.apply_operator(op)
+            try:
+                result_state.apply_operator(planner.operators[op])
+            except ValueError as error_message:
+                return f"The provided operator '{operator}' cannot be applied to start state '{start_state}' for the following reason: {error_message}"
             break
         if i == (len(planner.operators) -1):
             # raise ValueError(f"Operator not valid for {problem_type}. Please resubmit a valid operator from this list in the correct format: {str(planner.operators)}")
-            return f"Error: Operator not valid for {problem_type} problem instance. Please resubmit a valid operator from this list in the correct format: {str(planner.operators)}"
+            return f"Error: Operator not valid for {problem_type} problem instance. Please resubmit tool call with the operator parameter set to a valid option from this list in the correct format: {str(list(planner.operators.keys()))}"
 
-    return f"The result of applying {operator} to {start_state.__repr__()} is {result_state.__repr__()}"
+    return f"The result of applying the '{operator}' operator to start state '{start_state.__repr__()}' is the resulting state '{result_state.__repr__()}'"
 
 
 

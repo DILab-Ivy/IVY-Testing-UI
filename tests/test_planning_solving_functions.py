@@ -31,12 +31,21 @@ class TestPlanningModule(unittest.TestCase):
         with self.assertRaises(ValueError):
             _get_state_object('unknown_type', ["On(Robot, Floor)"])
 
-    def test_apply_operator_valid(self):
+    def test_apply_operator_valid_operator(self):
+        """Test that the operator is applied correctly to the state."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        operator = "paint-ladder"
+        result = apply_operator(start_state_conditions, operator, problem_type='robot')
+        expected_result = "The result of applying the 'paint-ladder' operator to start state 'On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder)' is the resulting state 'On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder)'"
+        self.assertEqual(expected_result, result)
+
+    def test_apply_operator_valid_operator_cant_be_applied(self):
         """Test that the operator is applied correctly to the state."""
         start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
         operator = "paint-ceiling"
         result = apply_operator(start_state_conditions, operator, problem_type='robot')
-        self.assertIn("The result of applying paint-ceiling", result)
+        expected_result = "The provided operator 'paint-ceiling' cannot be applied to start state 'On(Robot, Floor) ^ Dry(Ceiling) ^ Dry(Ladder)' for the following reason: Precondition 'On(Robot, Ladder)' is not met."
+        self.assertEqual(expected_result, result)
 
     def test_apply_operator_invalid_operator(self):
         """Test error handling for an invalid operator."""
@@ -58,6 +67,13 @@ class TestPlanningModule(unittest.TestCase):
         goal_state_conditions = ["Painted(Ladder)", "Painted(Ceiling)"]
         result = create_plan(start_state_conditions, goal_state_conditions, problem_type='robot')
         self.assertIsInstance(result, str)  # Assuming the function returns a string representation of the plan
+
+    def test_create_plan_valid_single_goal(self):
+        """Test that a valid plan is created for the given start and goal state."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        goal_state_conditions = ["Painted(Ceiling)"]
+        result = create_plan(start_state_conditions, goal_state_conditions, problem_type='robot')
+        self.assertIsInstance(result, str)
 
     def test_create_plan_invalid_problem_type(self):
         """Test error handling for create_plan with unsupported problem type."""
