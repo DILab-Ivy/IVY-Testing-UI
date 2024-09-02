@@ -1,3 +1,4 @@
+import copy
 import json
 from typing import List
 
@@ -28,6 +29,43 @@ def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
+def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'):
+    #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
+
+    # Initialize Planner based on problem_type
+    planner = _get_planner(problem_type)
+
+    # Convert conditions string from agent into appropriate State instances based on problem type
+    start_state = _get_state_object(problem_type, start_state_conditions)
+    result_state = copy.deepcopy(start_state)
+
+    for i, op in enumerate.planner.operators:
+        if operator == op:
+            result_state.apply_operator(op)
+            break
+        if i == (len(planner.operators) -1):
+            # raise ValueError(f"Operator not valid for {problem_type}. Please resubmit a valid operator from this list in the correct format: {str(planner.operators)}")
+            return f"Error: Operator not valid for {problem_type} problem instance. Please resubmit a valid operator from this list in the correct format: {str(planner.operators)}"
+
+    return f"The result of applying {operator} to {start_state.__repr__()} is {result_state.__repr__()}"
+
+
+
+
+def create_plan(start_state_conditions, goal_state_conditions, problem_type: str = 'robot'):
+    #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
+
+    # Initialize Planner based on problem_type
+    planner = _get_planner(problem_type)
+
+    # TODO: set up conditions for function call - basically handle converting agent inputs for robot and blockworld here to correct format for function
+    # Convert conditions string from agent into appropriate State instances based on problem type
+    start_state = _get_state_object(problem_type, start_state_conditions)
+    goal_conditions = goal_state_conditions
+    # goal_state = get_state_object(problem_type, goal_state_conditions)
+
+    return str(planner.build_complete_plan(start_state, goal_conditions))
+
 # Wrapper functions that use the planner
 # def build_partial_plan(problem_type: str, start_state_conditions: str, goal_state_conditions: str):
 #     pass
@@ -44,17 +82,3 @@ def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
 #     # planner = get_planner(problem_type)
 #     # return planner.reorder_partial_plans(plans)
 #     pass
-
-def create_plan(start_state_conditions, goal_state_conditions, problem_type: str = 'robot'):
-    #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
-
-    # Initialize Planner based on problem_type
-    planner = _get_planner(problem_type)
-
-    # TODO: set up conditions for function call - basically handle converting agent inputs for robot and blockworld here to correct format for function
-    # Convert conditions string from agent into appropriate State instances based on problem type
-    start_state = _get_state_object(problem_type, start_state_conditions)
-    goal_conditions = goal_state_conditions
-    # goal_state = get_state_object(problem_type, goal_state_conditions)
-
-    return planner.build_complete_plan(start_state, goal_conditions)
