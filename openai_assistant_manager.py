@@ -7,7 +7,7 @@ from openai.types.beta.threads import Text, TextDelta
 from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
 from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states, empty_args_error, handle_get_next_states, handle_validate_state, handle_find_path_between_two_states
-from skills.planning.planning_solving_functions import create_plan, apply_operator
+from skills.planning.planning_solving_functions import create_plan, apply_operator, handle_create_plan, handle_apply_operator
 
 # OpenAI Response Function
 def get_mage_response(question: str) -> str:
@@ -59,11 +59,13 @@ def get_mage_response(question: str) -> str:
                     if tool.type == "code_interpreter" and tool.code_interpreter and tool.code_interpreter.input:
                         print(tool.code_interpreter.input, end="", flush=True)
 
-        def handle_requires_action(self, data):
+        def handle_requires_action(self, data, run_id, tool_id=None):
             handlers = {
                 "get_next_states": handle_get_next_states,
                 "validate_state": handle_validate_state,
-                "find_path_between_two_states": handle_find_path_between_two_states
+                "find_path_between_two_states": handle_find_path_between_two_states,
+                "apply_operator": handle_apply_operator,
+                "create_plan": handle_create_plan
             }
 
             tool_outputs = []

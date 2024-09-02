@@ -31,6 +31,86 @@ def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
+    #### TODO: Tuesday Sept 2
+# TODO: merge with main functions or separate out duplicate code
+def handle_create_plan(tool, tool_outputs):
+    """
+    Handler function to create a plan from start state to goal state.
+    """
+    try:
+        # Extract arguments from tool function
+        args = tool.function.arguments
+
+        # Assuming arguments are passed as strings (state_conditions and operator)
+        start_state_conditions, goal_state_conditions, problem_type = args.get('start_state_conditions'), args.get(
+            'goal_state_conditions'), args.get('problem_type', 'robot')
+
+        # Initialize Planner based on problem_type
+        planner = _get_planner(problem_type)
+
+        # Convert conditions string from agent into appropriate State instances based on problem type
+        start_state = _get_state_object(problem_type, start_state_conditions)
+        goal_conditions = goal_state_conditions
+
+        plan_result = str(planner.build_complete_plan(start_state, goal_conditions))
+
+        tool_outputs.append({"tool_call_id": tool.id, "output": plan_result})
+
+    except ValueError as e:
+        tool_outputs.append({"tool_call_id": tool.id, "output": f"Error: {e}"})
+    except Exception as e:
+        tool_outputs.append({"tool_call_id": tool.id, "output": f"An unexpected error occurred: {e}"})
+
+
+def handle_apply_operator(tool, tool_outputs):
+    """
+    Handler function for applying an operator to a given state.
+    """
+    try:
+        # Extract arguments from tool function
+        args = tool.function.arguments
+
+        # Assuming arguments are passed as strings (state_conditions and operator)
+        start_state_conditions, operator, problem_type = args.get('start_state_conditions'), args.get(
+            'operator'), args.get('problem_type', 'robot')
+
+        # Initialize Planner based on problem_type
+        planner = _get_planner(problem_type)
+
+        # Convert conditions string from agent into appropriate State instances based on problem type
+        start_state = _get_state_object(problem_type, start_state_conditions)
+        result_state = copy.deepcopy(start_state)
+
+        # Iterate through operators to find the matching one
+        for i, op in enumerate(planner.operators.keys()):
+            if operator == op:
+                try:
+                    result_state.apply_operator(planner.operators[op])
+                except ValueError as error_message:
+                    tool_outputs.append({
+                        "tool_call_id": tool.id,
+                        "output": f"The provided operator '{operator}' cannot be applied to start state '{start_state}' for the following reason: {error_message}"
+                    })
+                    return
+                break
+            if i == (len(planner.operators) - 1):
+                tool_outputs.append({
+                    "tool_call_id": tool.id,
+                    "output": f"Error: Operator not valid for {problem_type} problem instance. Please resubmit tool call with the operator parameter set to a valid option from this list in the correct format: {str(list(planner.operators.keys()))}"
+                })
+                return
+
+        tool_outputs.append({
+            "tool_call_id": tool.id,
+            "output": f"The result of applying the '{operator}' operator to start state '{start_state.__repr__()}' is the resulting state '{result_state.__repr__()}'"
+        })
+
+    except ValueError as e:
+        tool_outputs.append({"tool_call_id": tool.id, "output": f"Error: {e}"})
+    except Exception as e:
+        tool_outputs.append({"tool_call_id": tool.id, "output": f"An unexpected error occurred: {e}"})
+
+
 def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'):
     # TODO: test questions: "what happens if i'm starting with the robot on the floor and the ladder painted and i try to climb the ladder?"
 
