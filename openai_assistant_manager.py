@@ -59,7 +59,7 @@ def get_mage_response(question: str) -> str:
                     if tool.type == "code_interpreter" and tool.code_interpreter and tool.code_interpreter.input:
                         print(tool.code_interpreter.input, end="", flush=True)
 
-        def handle_requires_action(self, data, run_id, tool_id=None):
+        def handle_requires_action(self, data):
             handlers = {
                 "get_next_states": handle_get_next_states,
                 "validate_state": handle_validate_state,
