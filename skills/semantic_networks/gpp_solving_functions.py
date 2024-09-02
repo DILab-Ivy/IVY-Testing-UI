@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List
-
+import ast
 
 def find_path_between_two_states(start_state: List[int], goal_state: List[int]):
     """
@@ -231,3 +231,69 @@ def get_next_states(
     result = {"valid": valid_states, "moves": valid_moves, "invalid": invalid_states, "log": log}
     print(f"result: {result}")
     return result
+
+
+# Error and event Handlers
+
+def empty_args_error(tool, tool_outputs):
+    missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
+    print(missing_arg_error_message)
+    tool_outputs.append({"tool_call_id": tool.id, "output": missing_arg_error_message})
+
+def handle_get_next_states(tool, tool_outputs):
+    if len(tool.function.arguments) < 3:
+        empty_args_error(tool, tool_outputs)
+        return
+
+    args = ast.literal_eval(tool.function.arguments)
+    try:
+        curr_state = args["state"]
+    except KeyError:
+        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
+        print(error_message)
+        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+        return
+
+    function_output = get_next_states(curr_state)
+    function_output = str(function_output)
+    print(f"function_output: {function_output}")
+    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+
+def handle_validate_state(tool, tool_outputs):
+    if len(tool.function.arguments) < 3:
+        empty_args_error(tool, tool_outputs)
+        return
+
+    args = ast.literal_eval(tool.function.arguments)
+    try:
+        curr_state = args["state"]
+    except KeyError:
+        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
+        print(error_message)
+        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+        return
+
+    function_output, log = validate_state(curr_state)
+    function_output = f"{function_output} {log}"
+    print(f"function_output: {function_output}")
+    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+
+def handle_find_path_between_two_states(tool, tool_outputs):
+    if len(tool.function.arguments) < 3:
+        empty_args_error(tool, tool_outputs)
+        return
+
+    args = ast.literal_eval(tool.function.arguments)
+    try:
+        start_state = args["start_state"]
+        goal_state = args["goal_state"]
+    except KeyError:
+        error_message = "Error: InvalidParameterName - Please resubmit with the required 'start_state' and 'goal_state' parameters"
+        print(error_message)
+        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+        return
+
+    function_output = find_path_between_two_states(start_state, goal_state)
+    function_output = str(function_output)
+    print(f"function_output: {function_output}")
+    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})

@@ -6,7 +6,7 @@ from openai.types.beta import AssistantStreamEvent
 from openai.types.beta.threads import Text, TextDelta
 from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
-from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states
+from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states, empty_args_error, handle_get_next_states, handle_validate_state, handle_find_path_between_two_states
 from skills.planning.planning_solving_functions import create_plan, apply_operator
 
 # OpenAI Response Function
@@ -60,82 +60,19 @@ def get_mage_response(question: str) -> str:
                         print(tool.code_interpreter.input, end="", flush=True)
 
         def handle_requires_action(self, data, run_id, tool_id=None):
-            #TODO: separate out GPP and Planning handling by creating two versions of handle_requires_action in separate files
-            # and swap out which one is used based on whether the gpp or planning agent was called
-            # or add Plannning parameter handling for new functions to this file
-            def empty_args_error(tool):
-                missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
-                print(missing_arg_error_message)
-                tool_outputs.append({"tool_call_id": tool.id, "output": missing_arg_error_message})
-
             tool_outputs = []
 
             for tool in data.required_action.submit_tool_outputs.tool_calls:
                 print(f'tool.function.arguments: {tool.function.arguments}')
                 if tool.function.name == "get_next_states":
                     print("get_next_states function called")
-                    if len(tool.function.arguments) < 3:
-                        empty_args_error(tool)
-                        continue
-                    # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
-                    args = ast.literal_eval(tool.function.arguments)
-                    try:
-                        curr_state = args["state"]
-                    except KeyError:
-                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
-                        print(error_message)
-                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
-                        continue
-                        # # TODO: if the above isn't working well or you don't want to re-call function constantly then you can simply grab the first provided argument
-                        # args_values_list = list(args.values())
-                        # curr_state = args_values_list[0]
-                    function_output = get_next_states(curr_state)
-                    function_output = str(function_output)
-                    print(f"function_output: {function_output}")
-                    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+                    handle_get_next_states(tool, tool_outputs)
                 elif tool.function.name == "validate_state":
                     print("validate_state function called")
-                    if len(tool.function.arguments) < 3:
-                        empty_args_error(tool)
-                        continue
-                    # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
-                    args = ast.literal_eval(tool.function.arguments)
-                    try:
-                        curr_state = args["state"]
-                    except KeyError:
-                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'state' parameter"
-                        print(error_message)
-                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
-                        continue
-                        # args_values_list = list(args.values())
-                        # curr_state = args_values_list[0]
-                    function_output, log = validate_state(curr_state)
-                    function_output = str(function_output)
-                    function_output = function_output + " " + log
-                    print(f"function_output: {function_output}")
-                    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+                    handle_validate_state(tool, tool_outputs)
                 elif tool.function.name == "find_path_between_two_states":
                     print("find_path_between_two_states function called")
-                    if len(tool.function.arguments) < 3:
-                        empty_args_error(tool)
-                        continue
-                    # tool_outputs.append({"tool_call_id": tool.id, "output": "57"})
-                    args = ast.literal_eval(tool.function.arguments)
-                    try:
-                        start_state = args["start_state"]
-                        goal_state = args["goal_state"]
-                    except KeyError:
-                        error_message = "Error: InvalidParameterName - Please resubmit with the required 'start_state' and 'goal_state' parameters"
-                        print(error_message)
-                        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
-                        continue
-                        # args_values_list = list(args.values())
-                        # curr_state = args_values_list[0]
-                    function_output = find_path_between_two_states(start_state, goal_state)
-                    function_output = str(function_output)
-                    # function_output = function_output + " " + log
-                    print(f"function_output: {function_output}")
-                    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+                    handle_find_path_between_two_states(tool, tool_outputs)
 
             # Submit all tool_outputs at the same time
             self.submit_tool_outputs(tool_outputs)
