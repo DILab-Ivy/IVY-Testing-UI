@@ -60,19 +60,24 @@ def get_mage_response(question: str) -> str:
                         print(tool.code_interpreter.input, end="", flush=True)
 
         def handle_requires_action(self, data, run_id, tool_id=None):
+            handlers = {
+                "get_next_states": handle_get_next_states,
+                "validate_state": handle_validate_state,
+                "find_path_between_two_states": handle_find_path_between_two_states
+            }
+
             tool_outputs = []
 
             for tool in data.required_action.submit_tool_outputs.tool_calls:
                 print(f'tool.function.arguments: {tool.function.arguments}')
-                if tool.function.name == "get_next_states":
-                    print("get_next_states function called")
-                    handle_get_next_states(tool, tool_outputs)
-                elif tool.function.name == "validate_state":
-                    print("validate_state function called")
-                    handle_validate_state(tool, tool_outputs)
-                elif tool.function.name == "find_path_between_two_states":
-                    print("find_path_between_two_states function called")
-                    handle_find_path_between_two_states(tool, tool_outputs)
+                # Fetch the handler function from the dictionary using the function name
+                handler = handlers.get(tool.function.name)
+
+                if handler:
+                    print(f"{tool.function.name} function called")
+                    handler(tool, tool_outputs)  # Call the handler function
+                else:
+                    print(f"Unknown function name: {tool.function.name}")
 
             # Submit all tool_outputs at the same time
             self.submit_tool_outputs(tool_outputs)
