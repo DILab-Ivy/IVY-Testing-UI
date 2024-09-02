@@ -1,83 +1,67 @@
-# import unittest
-# from unittest.mock import patch, MagicMock
-# # from skills.planning.planning_solving_functions import get_planner, get_state_object, build_partial_plan, reorder_plans_to_avoid_conflicts, build_complete_plan
-# from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
-# from skills.planning.state.instances.robot_painting_state import RobotPaintingState
-# from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
-# from skills.planning.operator.operator import Operator
-#
-#
-# class TestDispatcherFunctions(unittest.TestCase):
-#
-#     def test_get_planner_robot(self):
-#         planner = get_planner('robot')
-#         self.assertIsInstance(planner, RobotPaintingPlanner)
-#         self.assertIsInstance(planner.operators['climb-ladder'], Operator)
-#
-#     # def test_get_planner_blockworld(self):
-#     #     planner = get_planner('blockworld')
-#     #     self.assertIsInstance(planner, BlockWorldPlanner)
-#
-#     def test_get_planner_unknown(self):
-#         with self.assertRaises(ValueError) as context:
-#             get_planner('unknown')
-#         self.assertEqual(str(context.exception), "Unknown problem type. Please choose 'blockworld' or 'robot'.")
-#
-#     def test_get_state_object_robot(self):
-#         state_conditions_list = ['On(Robot, Floor)', 'Dry(Ceiling)', 'Dry(Ladder)']
-#         state = get_state_object('robot', state_conditions_list)
-#         self.assertIsInstance(state, RobotPaintingState)
-#
-#     # def test_get_state_object_blockworld(self):
-#     #     state_conditions_list = ['On(A,B)', 'On(B,Table)']
-#     #     state = get_state_object('blockworld', state_conditions_list)
-#     #     self.assertIsInstance(state, BlockWorldState)
-#
-#     def test_get_state_object_unknown(self):
-#         with self.assertRaises(ValueError) as context:
-#             get_state_object('unknown', '[{"condition": "on", "object": "block"}]')
-#         self.assertEqual(str(context.exception), "Unknown problem type. Please choose 'blockworld' or 'robot'.")
-#
-#     @patch('dispatcher.RobotPaintingPlanner.generate_partial_plan')
-#     @patch('dispatcher.RobotPaintingState.from_conditions_list')
-#     def test_generate_plan(self, mock_from_conditions_list, mock_generate_partial_plan):
-#         mock_state = MagicMock(spec=RobotPaintingState)
-#         mock_from_conditions_list.return_value = mock_state
-#         mock_generate_partial_plan.return_value = ['paint wall']
-#
-#         start_state_conditions = '[{"condition": "clean", "object": "wall"}]'
-#         goal_state_conditions = '[{"condition": "painted", "object": "wall"}]'
-#
-#         plan = build_partial_plan('robot', start_state_conditions, goal_state_conditions)
-#
-#         mock_from_conditions_list.assert_called_with(start_state_conditions)
-#         mock_from_conditions_list.assert_called_with(goal_state_conditions)
-#         mock_generate_partial_plan.assert_called_with(mock_state, mock_state)
-#         self.assertEqual(plan, ['paint wall'])
-#
-#     @patch('dispatcher.RobotPaintingPlanner.reorder_partial_plans')
-#     def test_reorder_to_avoid(self, mock_reorder_partial_plans):
-#         mock_reorder_partial_plans.return_value = [['plan1', 'plan2']]
-#         plans = [['plan1'], ['plan2']]
-#
-#         reordered_plans = reorder_plans_to_avoid_conflicts('robot', plans)
-#
-#         mock_reorder_partial_plans.assert_called_with(plans)
-#         self.assertEqual(reordered_plans, [['plan1', 'plan2']])
-#
-#     @patch('dispatcher.RobotPaintingPlanner.generate_complete_plan')
-#     @patch('dispatcher.RobotPaintingState.from_conditions_list')
-#     def test_generate_complete_plan(self, mock_from_conditions_list, mock_generate_complete_plan):
-#         mock_state = MagicMock(spec=RobotPaintingState)
-#         mock_from_conditions_list.return_value = mock_state
-#         mock_generate_complete_plan.return_value = ['complete plan']
-#
-#         start_state_conditions = '[{"condition": "clean", "object": "wall"}]'
-#         goal_state_conditions = '[{"condition": "painted", "object": "wall"}]'
-#
-#         complete_plan = build_complete_plan('robot', start_state_conditions, goal_state_conditions)
-#
-#         mock_from_conditions_list.assert_called_with(start_state_conditions)
-#         mock_from_conditions_list.assert_called_with(goal_state_conditions)
-#         mock_generate_complete_plan.assert_called_with(mock_state, mock_state)
-#         self.assertEqual(complete_plan, ['complete plan'])
+import unittest
+from unittest.mock import patch, MagicMock
+from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
+from skills.planning.state.instances.robot_painting_state import RobotPaintingState, RobotPosition, Status
+from skills.planning.operator.operator import Operator
+from skills.planning.planning_solving_functions import _get_planner, _get_state_object, apply_operator, create_plan
+
+
+class TestPlanningModule(unittest.TestCase):
+
+    def test_get_planner_robot(self):
+        """Test that the correct planner is returned for 'robot'."""
+        planner = _get_planner('robot')
+        self.assertIsInstance(planner, RobotPaintingPlanner)
+
+    def test_get_planner_invalid_type(self):
+        """Test that ValueError is raised for an unsupported problem type."""
+        with self.assertRaises(ValueError):
+            _get_planner('unknown_type')
+
+    def test_get_state_object_robot(self):
+        """Test that the correct state object is returned for 'robot'."""
+        state = _get_state_object('robot', ["On(Robot, Floor)", "Painted(Ceiling)", "Dry(Ladder)"])
+        self.assertIsInstance(state, RobotPaintingState)
+        self.assertEqual(state.robot_position, RobotPosition.ON_FLOOR)
+        self.assertIn(Status.PAINTED, state.ceiling_status)
+        self.assertIn(Status.DRY, state.ladder_status)
+
+    def test_get_state_object_invalid_type(self):
+        """Test that ValueError is raised for an unsupported problem type in state object creation."""
+        with self.assertRaises(ValueError):
+            _get_state_object('unknown_type', ["On(Robot, Floor)"])
+
+    def test_apply_operator_valid(self):
+        """Test that the operator is applied correctly to the state."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        operator = "paint-ceiling"
+        result = apply_operator(start_state_conditions, operator, problem_type='robot')
+        self.assertIn("The result of applying paint-ceiling", result)
+
+    def test_apply_operator_invalid_operator(self):
+        """Test error handling for an invalid operator."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        operator = "invalid-operator"
+        result = apply_operator(start_state_conditions, operator, problem_type='robot')
+        self.assertIn("Error: Operator not valid for robot", result)
+
+    def test_apply_operator_invalid_problem_type(self):
+        """Test error handling for an unsupported problem type."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        operator = "paint-ceiling"
+        with self.assertRaises(ValueError):
+            apply_operator(start_state_conditions, operator, problem_type='unknown')
+
+    def test_create_plan_valid(self):
+        """Test that a valid plan is created for the given start and goal state."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        goal_state_conditions = ["Painted(Ladder)", "Painted(Ceiling)"]
+        result = create_plan(start_state_conditions, goal_state_conditions, problem_type='robot')
+        self.assertIsInstance(result, str)  # Assuming the function returns a string representation of the plan
+
+    def test_create_plan_invalid_problem_type(self):
+        """Test error handling for create_plan with unsupported problem type."""
+        start_state_conditions = ["On(Robot, Floor)", "Dry(Ceiling)", "Dry(Ladder)"]
+        goal_state_conditions = ["Painted(Ladder)", "Painted(Ceiling)"]
+        with self.assertRaises(ValueError):
+            create_plan(start_state_conditions, goal_state_conditions, problem_type='unknown')

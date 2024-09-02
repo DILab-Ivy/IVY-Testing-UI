@@ -22,6 +22,8 @@ def _get_planner(problem_type: str) -> Planner:
 def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
     """Function to load State object for appropriate problem instance"""
     if problem_type == 'robot':
+        # TODO: build in handling that will take partial states and then complete them with default values -
+        #  eg. On(Robot, Floor), Painted(Ceiling) passed in but nothing for ladder -> just set Dry(Ladder) as default
         return RobotPaintingState.from_conditions_list(state_conditions_list)
     elif problem_type == 'blockworld':
         # return BlockWorldPlanner()
@@ -30,6 +32,8 @@ def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
 def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'):
+    # TODO: test questions: "what happens if i'm starting with the robot on the floor and the ladder painted and i try to climb the ladder?"
+
     #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
 
     # Initialize Planner based on problem_type
