@@ -194,7 +194,7 @@ class RobotPaintingState(State):
         """Check if the State conditions clobber the Operator preconditions."""
 
         # Check if the ladder is painted and not dry
-        ladder_clobber_condition = Status.PAINTED in self.ladder_status and Status.NOT_DRY in self.ladder_status
+        ladder_clobber_condition = Status.PAINTED in self.ladder_status or Status.NOT_DRY in self.ladder_status
 
         # Check for the specific operator and conditions
         if operator_precondition == "climb-ladder" and ladder_clobber_condition:

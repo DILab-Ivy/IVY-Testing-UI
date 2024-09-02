@@ -172,12 +172,13 @@ class TestRobotPaintingState(unittest.TestCase):
             {Status.PAINTED, Status.NOT_DRY}  # Ladder is painted and not dry
         )
 
-        # Create an operator that will be clobbered by the state
-        operator = RobotPaintingOperator(
-            name="climb-ladder",
-            preconditions=["On(Robot, Floor)"],
-            postconditions=["On(Robot, Ladder)"]
-        )
+        # # Create an operator that will be clobbered by the state
+        # operator = RobotPaintingOperator(
+        #     name="climb-ladder",
+        #     preconditions=["On(Robot, Floor)"],
+        #     postconditions=["On(Robot, Ladder)"]
+        # )
+        operator = "climb-ladder"
 
         # Check if state clobbers the operator
         self.assertTrue(state.check_if_state_clobbers_operator(operator))
