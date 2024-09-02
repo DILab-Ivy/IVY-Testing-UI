@@ -7,7 +7,7 @@ from openai.types.beta.threads import Text, TextDelta
 from openai.types.beta.threads.runs import RunStep, RunStepDelta
 import ast
 from skills.semantic_networks.gpp_solving_functions import find_path_between_two_states, validate_state, get_next_states
-from skills.planning.planning_solving_functions import build_partial_plan, reorder_plans_to_avoid_conflicts, complete_plan, build_complete_plan
+from skills.planning.planning_solving_functions import create_plan
 
 # OpenAI Response Function
 def get_mage_response(question: str) -> str:
