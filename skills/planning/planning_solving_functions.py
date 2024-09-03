@@ -1,6 +1,7 @@
 import copy
 import json
 from typing import List
+import ast
 
 from skills.planning.planner.instances.blockworld_planner import BlockWorldPlanner
 from skills.planning.planner.planner import Planner
@@ -31,86 +32,6 @@ def _get_state_object(problem_type: str, state_conditions_list: str) -> State:
     else:
         raise ValueError("Unknown problem type. Please choose 'blockworld' or 'robot'.")
 
-    #### TODO: Tuesday Sept 2
-# TODO: merge with main functions or separate out duplicate code
-def handle_create_plan(tool, tool_outputs):
-    """
-    Handler function to create a plan from start state to goal state.
-    """
-    try:
-        # Extract arguments from tool function
-        args = tool.function.arguments
-
-        # Assuming arguments are passed as strings (state_conditions and operator)
-        start_state_conditions, goal_state_conditions, problem_type = args.get('start_state_conditions'), args.get(
-            'goal_state_conditions'), args.get('problem_type', 'robot')
-
-        # Initialize Planner based on problem_type
-        planner = _get_planner(problem_type)
-
-        # Convert conditions string from agent into appropriate State instances based on problem type
-        start_state = _get_state_object(problem_type, start_state_conditions)
-        goal_conditions = goal_state_conditions
-
-        plan_result = str(planner.build_complete_plan(start_state, goal_conditions))
-
-        tool_outputs.append({"tool_call_id": tool.id, "output": plan_result})
-
-    except ValueError as e:
-        tool_outputs.append({"tool_call_id": tool.id, "output": f"Error: {e}"})
-    except Exception as e:
-        tool_outputs.append({"tool_call_id": tool.id, "output": f"An unexpected error occurred: {e}"})
-
-
-def handle_apply_operator(tool, tool_outputs):
-    """
-    Handler function for applying an operator to a given state.
-    """
-    try:
-        # Extract arguments from tool function
-        args = tool.function.arguments
-
-        # Assuming arguments are passed as strings (state_conditions and operator)
-        start_state_conditions, operator, problem_type = args.get('start_state_conditions'), args.get(
-            'operator'), args.get('problem_type', 'robot')
-
-        # Initialize Planner based on problem_type
-        planner = _get_planner(problem_type)
-
-        # Convert conditions string from agent into appropriate State instances based on problem type
-        start_state = _get_state_object(problem_type, start_state_conditions)
-        result_state = copy.deepcopy(start_state)
-
-        # Iterate through operators to find the matching one
-        for i, op in enumerate(planner.operators.keys()):
-            if operator == op:
-                try:
-                    result_state.apply_operator(planner.operators[op])
-                except ValueError as error_message:
-                    tool_outputs.append({
-                        "tool_call_id": tool.id,
-                        "output": f"The provided operator '{operator}' cannot be applied to start state '{start_state}' for the following reason: {error_message}"
-                    })
-                    return
-                break
-            if i == (len(planner.operators) - 1):
-                tool_outputs.append({
-                    "tool_call_id": tool.id,
-                    "output": f"Error: Operator not valid for {problem_type} problem instance. Please resubmit tool call with the operator parameter set to a valid option from this list in the correct format: {str(list(planner.operators.keys()))}"
-                })
-                return
-
-        tool_outputs.append({
-            "tool_call_id": tool.id,
-            "output": f"The result of applying the '{operator}' operator to start state '{start_state.__repr__()}' is the resulting state '{result_state.__repr__()}'"
-        })
-
-    except ValueError as e:
-        tool_outputs.append({"tool_call_id": tool.id, "output": f"Error: {e}"})
-    except Exception as e:
-        tool_outputs.append({"tool_call_id": tool.id, "output": f"An unexpected error occurred: {e}"})
-
-
 def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'):
     # TODO: test questions: "what happens if i'm starting with the robot on the floor and the ladder painted and i try to climb the ladder?"
 
@@ -136,9 +57,6 @@ def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'
 
     return f"The result of applying the '{operator}' operator to start state '{start_state.__repr__()}' is the resulting state '{result_state.__repr__()}'"
 
-
-
-
 def create_plan(start_state_conditions, goal_state_conditions, problem_type: str = 'robot'):
     #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
 
@@ -152,6 +70,141 @@ def create_plan(start_state_conditions, goal_state_conditions, problem_type: str
     # goal_state = get_state_object(problem_type, goal_state_conditions)
 
     return str(planner.build_complete_plan(start_state, goal_conditions))
+
+    # Error and event Handlers
+
+
+def empty_args_error(tool, tool_outputs):
+    missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
+    print(missing_arg_error_message)
+    tool_outputs.append({"tool_call_id": tool.id, "output": missing_arg_error_message})
+
+def handle_apply_operator(tool, tool_outputs):
+    if len(tool.function.arguments) < 3:
+        empty_args_error(tool, tool_outputs)
+        return
+
+    args = ast.literal_eval(tool.function.arguments)
+    try:
+        start_conditions = args["start_conditions"]
+        operator_name = args["operator"]
+
+        # Validate the input format
+        if not isinstance(start_conditions, list) or not all(isinstance(cond, str) for cond in start_conditions):
+            raise ValueError("Invalid format for 'start_conditions'. It must be a list of strings.")
+        if not isinstance(operator_name, str):
+            raise ValueError("Invalid format for 'operator'. It must be a string.")
+
+        # Ensure exactly one "On(Robot, {location})" condition
+        robot_conditions = [cond for cond in start_conditions if cond.startswith("On(Robot, ")]
+        if len(robot_conditions) != 1 or not any(location in robot_conditions[0] for location in ["Floor", "Ladder"]):
+            raise ValueError(
+                "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
+
+        # Check ladder conditions
+        ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
+        if not ladder_conditions:
+            raise ValueError(
+                "At least one ladder condition ('Dry(Ladder)', 'Painted(Ladder)', '¬Dry(Ladder)') must be provided.")
+        if "Dry(Ladder)" in ladder_conditions and (
+                "Painted(Ladder)" in ladder_conditions or "¬Dry(Ladder)" in ladder_conditions):
+            raise ValueError(
+                "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
+
+        # Check ceiling conditions
+        ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
+        if not ceiling_conditions:
+            raise ValueError(
+                "At least one ceiling condition ('Dry(Ceiling)', 'Painted(Ceiling)', '¬Dry(Ceiling)') must be provided.")
+        if "Dry(Ceiling)" in ceiling_conditions and (
+                "Painted(Ceiling)" in ceiling_conditions or "¬Dry(Ceiling)" in ceiling_conditions):
+            raise ValueError(
+                "Invalid ceiling conditions: 'Dry(Ceiling)' cannot be combined with 'Painted(Ceiling)' or '¬Dry(Ceiling)'.")
+
+        # Check if operator exists in planner.operators
+        planner = RobotPaintingPlanner()  # Assuming the planner is always RobotPaintingPlanner
+        if operator_name not in planner.operators.keys():
+            raise ValueError(f"Invalid operator '{operator_name}'. Must be one of: {list(planner.operators.keys())}")
+
+    except KeyError:
+        error_message = "Error: InvalidParameterName - Please resubmit with the required 'start_conditions' and 'operator' parameters."
+        print(error_message)
+        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+        return
+    except ValueError as error_message:
+        tool_outputs.append({"tool_call_id": tool.id, "output": str(error_message)})
+        return
+
+    function_output = apply_operator(start_conditions, operator_name, problem_type='robot')
+    function_output = f"{function_output}"
+    print(f"function_output: {function_output}")
+    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+
+# TODO: merge with main functions or separate out duplicate code
+def handle_create_plan(tool, tool_outputs):
+    if len(tool.function.arguments) < 3:
+        empty_args_error(tool, tool_outputs)
+        return
+
+    args = ast.literal_eval(tool.function.arguments)
+    try:
+        start_conditions = args["start_conditions"]
+        goal_conditions = args["goal_conditions"]
+
+        # Validate the input format
+        if not isinstance(start_conditions, list) or not all(isinstance(cond, str) for cond in start_conditions):
+            raise ValueError("Invalid format for 'start_conditions'. It must be a list of strings.")
+
+        if not isinstance(goal_conditions, list) or not all(isinstance(cond, str) for cond in goal_conditions):
+            raise ValueError("Invalid format for 'goal_conditions'. It must be a list of strings.")
+
+        # Ensure exactly one "On(Robot, {location})" condition
+        robot_conditions = [cond for cond in start_conditions if cond.startswith("On(Robot, ")]
+        if len(robot_conditions) != 1 or not any(
+                location in robot_conditions[0] for location in ["Floor", "Ladder"]):
+            raise ValueError(
+                "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
+
+        # Check ladder conditions
+        ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
+        if not ladder_conditions:
+            raise ValueError(
+                "At least one ladder condition ('Dry(Ladder)', 'Painted(Ladder)', '¬Dry(Ladder)') must be provided.")
+        if "Dry(Ladder)" in ladder_conditions and (
+                "Painted(Ladder)" in ladder_conditions or "¬Dry(Ladder)" in ladder_conditions):
+            raise ValueError(
+                "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
+
+        # Check ceiling conditions
+        ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
+        if not ceiling_conditions:
+            raise ValueError(
+                "At least one ceiling condition ('Dry(Ceiling)', 'Painted(Ceiling)', '¬Dry(Ceiling)') must be provided.")
+        if "Dry(Ceiling)" in ceiling_conditions and (
+                "Painted(Ceiling)" in ceiling_conditions or "¬Dry(Ceiling)" in ceiling_conditions):
+            raise ValueError(
+                "Invalid ceiling conditions: 'Dry(Ceiling)' cannot be combined with 'Painted(Ceiling)' or '¬Dry(Ceiling)'.")
+
+        # Check if goal_conditions include "Painted(Ceiling)" or "Painted(Ladder)"
+        if not any(cond in goal_conditions for cond in ["Painted(Ceiling)", "Painted(Ladder)"]):
+            raise ValueError("Goal conditions must include at least 'Painted(Ceiling)' or 'Painted(Ladder)'.")
+
+    except KeyError:
+        error_message = "Error: InvalidParameterName - Please resubmit with the required 'start_conditions' and 'goal_conditions' parameters"
+        print(error_message)
+        tool_outputs.append({"tool_call_id": tool.id, "output": error_message})
+        return
+    except ValueError as error_message:
+        tool_outputs.append({"tool_call_id": tool.id, "output": str(error_message)})
+        return
+
+    function_output = create_plan(start_conditions, goal_conditions, problem_type='robot')
+    function_output = f"{function_output}"
+    print(f"function_output: {function_output}")
+    tool_outputs.append({"tool_call_id": tool.id, "output": function_output})
+
+
+
 
 # Wrapper functions that use the planner
 # def build_partial_plan(problem_type: str, start_state_conditions: str, goal_state_conditions: str):

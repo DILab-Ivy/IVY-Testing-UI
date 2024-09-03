@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from skills.planning.planner.instances.robot_painting_planner import RobotPaintingPlanner
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState, RobotPosition, Status
 from skills.planning.operator.operator import Operator
-from skills.planning.planning_solving_functions import _get_planner, _get_state_object, apply_operator, create_plan
+from skills.planning.planning_solving_functions import _get_planner, _get_state_object, apply_operator, create_plan, handle_create_plan, handle_apply_operator
 
 
 class TestPlanningModule(unittest.TestCase):
@@ -81,3 +81,130 @@ class TestPlanningModule(unittest.TestCase):
         goal_state_conditions = ["Painted(Ladder)", "Painted(Ceiling)"]
         with self.assertRaises(ValueError):
             create_plan(start_state_conditions, goal_state_conditions, problem_type='unknown')
+
+    def test_handle_apply_operator_missing_args(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{}"
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Error: MissingArguments - No arguments provided" in output["output"] for output in tool_outputs))
+
+    def test_handle_create_plan_missing_args(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{}"
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any("Error: MissingArguments - No arguments provided" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_invalid_start_conditions_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': 'On(Robot, Floor)', 'operator': 'climb-ladder'}"  # Invalid format: should be a list
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'start_conditions'" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_invalid_operator_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)'], 'operator': ['climb-ladder']}"  # Invalid format: operator should be a string
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'operator'" in output["output"] for output in tool_outputs))
+
+    def test_handle_create_plan_invalid_start_conditions_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': 'On(Robot, Floor)', 'goal_conditions': ['Painted(Ceiling)']}"  # Invalid format: should be a list
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'start_conditions'" in output["output"] for output in tool_outputs))
+
+    def test_handle_create_plan_invalid_goal_conditions_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)'], 'goal_conditions': 'Painted(Ceiling)'}"  # Invalid format: should be a list
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'goal_conditions'" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_invalid_operator(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)', 'Dry(Ladder)', 'Dry(Ceiling)'], 'operator': 'invalid-operator'}"
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid operator" in output["output"] for output in tool_outputs))
+
+    def test_handle_create_plan_missing_painted_conditions(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Ladder)', 'Dry(Ladder)', '¬Dry(Ceiling)'], 'goal_conditions': ['¬Dry(Ladder)']}"
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any(
+            "Goal conditions must include at least 'Painted(Ceiling)' or 'Painted(Ladder)'" in output["output"] for
+            output in tool_outputs))
+
+    def test_handle_create_plan_valid_conditions(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Ladder)', 'Dry(Ladder)', 'Painted(Ceiling)'], 'goal_conditions': ['Painted(Ladder)']}"
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any("Painted(Ladder)" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_invalid_start_conditions_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': 'On(Robot, Floor)', 'operator': 'climb-ladder'}"  # Invalid format: should be a list
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'start_conditions'" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_invalid_operator_format(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)'], 'operator': ['climb-ladder']}"  # Invalid format: operator should be a string
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid format for 'operator'" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_missing_robot_condition(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['Dry(Ladder)', 'Painted(Ceiling)'], 'operator': 'climb-ladder'}"
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any(
+            "Exactly one valid 'On(Robot, {location})' condition must be provided" in output["output"] for output in
+            tool_outputs))
+
+    def test_handle_apply_operator_invalid_ladder_conditions(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)', 'Dry(Ladder)', 'Painted(Ladder)'], 'operator': 'climb-ladder'}"  # Invalid: Dry and Painted together
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("Invalid ladder conditions" in output["output"] for output in tool_outputs))
+
+    def test_handle_apply_operator_valid_conditions(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Floor)', 'Dry(Ladder)', 'Painted(Ceiling)'], 'operator': 'climb-ladder'}"
+        tool_outputs = []
+        handle_apply_operator(tool, tool_outputs)
+        self.assertTrue(any("result of applying" in output["output"] for output in tool_outputs))
+
+    def test_handle_create_plan_invalid_ceiling_conditions(self):
+        tool = MagicMock()
+        tool.id = "123"
+        tool.function.arguments = "{'start_conditions': ['On(Robot, Ladder)', 'Dry(Ceiling)', 'Painted(Ceiling)'], 'goal_conditions': ['Painted(Ladder)']}"  # Invalid: Dry and Painted together
+        tool_outputs = []
+        handle_create_plan(tool, tool_outputs)
+        self.assertTrue(any("Invalid ceiling conditions" in output["output"] for output in tool_outputs))
+
+
+
