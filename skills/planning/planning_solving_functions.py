@@ -9,6 +9,12 @@ from skills.planning.planner.instances.robot_painting_planner import RobotPainti
 from skills.planning.state.instances.robot_painting_state import RobotPaintingState
 from skills.planning.state.state import State
 
+# Valid conditions list
+VALID_CONDITIONS = [
+    'Dry(Ladder)', '¬Dry(Ladder)', 'Dry(Ceiling)', '¬Dry(Ceiling)',
+    'Painted(Ladder)', 'Painted(Ceiling)', 'On(Robot, Floor)', 'On(Robot, Ladder)'
+]
+
 
 def _get_planner(problem_type: str) -> Planner:
     """Function to load planner for appropriate problem instance"""
@@ -40,8 +46,12 @@ def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'
     # Initialize Planner based on problem_type
     planner = _get_planner(problem_type)
 
-    # Convert conditions string from agent into appropriate State instances based on problem type
-    start_state = _get_state_object(problem_type, start_state_conditions)
+    try:
+        # Convert conditions string from agent into appropriate State instances based on problem type
+        start_state = _get_state_object(problem_type, start_state_conditions)
+    except ValueError as error_message:
+        return f"Error: The start state conditions are invalid: {error_message}"
+
     result_state = copy.deepcopy(start_state)
 
     for i, op in enumerate(planner.operators.keys()):
@@ -58,21 +68,27 @@ def apply_operator(start_state_conditions, operator, problem_type: str = 'robot'
     return f"The result of applying the '{operator}' operator to start state '{start_state.__repr__()}' is the resulting state '{result_state.__repr__()}'"
 
 def create_plan(start_state_conditions, goal_state_conditions, problem_type: str = 'robot'):
-    #TODO: build error handling to check that all required conditions for each problem type and input are included and in correct format
-
     # Initialize Planner based on problem_type
-    planner = _get_planner(problem_type)
+    try:
+        planner = _get_planner(problem_type)
+        try:
+            # Convert conditions string from agent into appropriate State instances based on problem type
+            start_state = _get_state_object(problem_type, start_state_conditions)
+        except ValueError as error_message:
+            return f"Error: The start state conditions are invalid: {error_message}"
 
-    # TODO: set up conditions for function call - basically handle converting agent inputs for robot and blockworld here to correct format for function
-    # Convert conditions string from agent into appropriate State instances based on problem type
-    start_state = _get_state_object(problem_type, start_state_conditions)
-    goal_conditions = goal_state_conditions
-    # goal_state = get_state_object(problem_type, goal_state_conditions)
+        goal_conditions = goal_state_conditions
 
-    return str(planner.build_complete_plan(start_state, goal_conditions))
+        # Try to build the complete plan using the planner
+        try:
+            complete_plan = planner.build_complete_plan(start_state, goal_conditions)
+        except ValueError as error_message:
+            return f"Error: The plan could not be created due to an issue: {error_message}"
 
-    # Error and event Handlers
+    except ValueError as error_message:
+        return f"Error: {error_message}"
 
+    return str(complete_plan)
 
 def empty_args_error(tool, tool_outputs):
     missing_arg_error_message = "Error: MissingArguments - No arguments provided. Please resubmit request with the required arguments."
@@ -95,28 +111,32 @@ def handle_apply_operator(tool, tool_outputs):
         if not isinstance(operator_name, str):
             raise ValueError("Invalid format for 'operator'. It must be a string.")
 
+        # Ensure start_conditions only contain valid conditions
+        invalid_conditions = [cond for cond in start_conditions if cond not in VALID_CONDITIONS]
+        if invalid_conditions:
+            raise ValueError(
+                f"Invalid condition(s) detected: {invalid_conditions}. Please use conditions from the list: {VALID_CONDITIONS}.")
+
         # Ensure exactly one "On(Robot, {location})" condition
         robot_conditions = [cond for cond in start_conditions if cond.startswith("On(Robot, ")]
         if len(robot_conditions) != 1 or not any(location in robot_conditions[0] for location in ["Floor", "Ladder"]):
             raise ValueError(
                 "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
 
-        # Check ladder conditions
+        # Check ladder conditions, default to "Dry(Ladder)" if not provided
         ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
         if not ladder_conditions:
-            raise ValueError(
-                "At least one ladder condition ('Dry(Ladder)', 'Painted(Ladder)', '¬Dry(Ladder)') must be provided.")
-        if "Dry(Ladder)" in ladder_conditions and (
+            start_conditions.append("Dry(Ladder)")
+        elif "Dry(Ladder)" in ladder_conditions and (
                 "Painted(Ladder)" in ladder_conditions or "¬Dry(Ladder)" in ladder_conditions):
             raise ValueError(
                 "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
 
-        # Check ceiling conditions
+        # Check ceiling conditions, default to "Dry(Ceiling)" if not provided
         ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
         if not ceiling_conditions:
-            raise ValueError(
-                "At least one ceiling condition ('Dry(Ceiling)', 'Painted(Ceiling)', '¬Dry(Ceiling)') must be provided.")
-        if "Dry(Ceiling)" in ceiling_conditions and (
+            start_conditions.append("Dry(Ceiling)")
+        elif "Dry(Ceiling)" in ceiling_conditions and (
                 "Painted(Ceiling)" in ceiling_conditions or "¬Dry(Ceiling)" in ceiling_conditions):
             raise ValueError(
                 "Invalid ceiling conditions: 'Dry(Ceiling)' cannot be combined with 'Painted(Ceiling)' or '¬Dry(Ceiling)'.")
@@ -158,6 +178,16 @@ def handle_create_plan(tool, tool_outputs):
         if not isinstance(goal_conditions, list) or not all(isinstance(cond, str) for cond in goal_conditions):
             raise ValueError("Invalid format for 'goal_conditions'. It must be a list of strings.")
 
+        # Ensure start_conditions and goal_conditions only contain valid conditions
+        invalid_start_conditions = [cond for cond in start_conditions if cond not in VALID_CONDITIONS]
+        invalid_goal_conditions = [cond for cond in goal_conditions if cond not in VALID_CONDITIONS]
+        if invalid_start_conditions:
+            raise ValueError(
+                f"Invalid start condition(s) detected: {invalid_start_conditions}. Please use conditions from the list: {VALID_CONDITIONS}.")
+        if invalid_goal_conditions:
+            raise ValueError(
+                f"Invalid goal condition(s) detected: {invalid_goal_conditions}. Please use conditions from the list: {VALID_CONDITIONS}.")
+
         # Ensure exactly one "On(Robot, {location})" condition
         robot_conditions = [cond for cond in start_conditions if cond.startswith("On(Robot, ")]
         if len(robot_conditions) != 1 or not any(
@@ -165,22 +195,20 @@ def handle_create_plan(tool, tool_outputs):
             raise ValueError(
                 "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
 
-        # Check ladder conditions
+        # Check ladder conditions, default to "Dry(Ladder)" if not provided
         ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
         if not ladder_conditions:
-            raise ValueError(
-                "At least one ladder condition ('Dry(Ladder)', 'Painted(Ladder)', '¬Dry(Ladder)') must be provided.")
-        if "Dry(Ladder)" in ladder_conditions and (
+            start_conditions.append("Dry(Ladder)")
+        elif "Dry(Ladder)" in ladder_conditions and (
                 "Painted(Ladder)" in ladder_conditions or "¬Dry(Ladder)" in ladder_conditions):
             raise ValueError(
                 "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
 
-        # Check ceiling conditions
+        # Check ceiling conditions, default to "Dry(Ceiling)" if not provided
         ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
         if not ceiling_conditions:
-            raise ValueError(
-                "At least one ceiling condition ('Dry(Ceiling)', 'Painted(Ceiling)', '¬Dry(Ceiling)') must be provided.")
-        if "Dry(Ceiling)" in ceiling_conditions and (
+            start_conditions.append("Dry(Ceiling)")
+        elif "Dry(Ceiling)" in ceiling_conditions and (
                 "Painted(Ceiling)" in ceiling_conditions or "¬Dry(Ceiling)" in ceiling_conditions):
             raise ValueError(
                 "Invalid ceiling conditions: 'Dry(Ceiling)' cannot be combined with 'Painted(Ceiling)' or '¬Dry(Ceiling)'.")
