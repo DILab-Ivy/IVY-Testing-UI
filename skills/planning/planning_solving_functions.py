@@ -124,7 +124,7 @@ def handle_apply_operator(tool, tool_outputs):
                 "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
 
         # Check ladder conditions, default to "Dry(Ladder)" if not provided
-        ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
+        ladder_conditions = [cond for cond in start_conditions if "(Ladder)" in cond]
         if not ladder_conditions:
             start_conditions.append("Dry(Ladder)")
         elif "Dry(Ladder)" in ladder_conditions and (
@@ -133,7 +133,7 @@ def handle_apply_operator(tool, tool_outputs):
                 "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
 
         # Check ceiling conditions, default to "Dry(Ceiling)" if not provided
-        ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
+        ceiling_conditions = [cond for cond in start_conditions if "(Ceiling)" in cond]
         if not ceiling_conditions:
             start_conditions.append("Dry(Ceiling)")
         elif "Dry(Ceiling)" in ceiling_conditions and (
@@ -196,7 +196,7 @@ def handle_create_plan(tool, tool_outputs):
                 "Exactly one valid 'On(Robot, {location})' condition must be provided, where location is either 'Floor' or 'Ladder'.")
 
         # Check ladder conditions, default to "Dry(Ladder)" if not provided
-        ladder_conditions = [cond for cond in start_conditions if "Ladder" in cond]
+        ladder_conditions = [cond for cond in start_conditions if "(Ladder)" in cond]
         if not ladder_conditions:
             start_conditions.append("Dry(Ladder)")
         elif "Dry(Ladder)" in ladder_conditions and (
@@ -205,7 +205,7 @@ def handle_create_plan(tool, tool_outputs):
                 "Invalid ladder conditions: 'Dry(Ladder)' cannot be combined with 'Painted(Ladder)' or '¬Dry(Ladder)'.")
 
         # Check ceiling conditions, default to "Dry(Ceiling)" if not provided
-        ceiling_conditions = [cond for cond in start_conditions if "Ceiling" in cond]
+        ceiling_conditions = [cond for cond in start_conditions if "(Ceiling)" in cond]
         if not ceiling_conditions:
             start_conditions.append("Dry(Ceiling)")
         elif "Dry(Ceiling)" in ceiling_conditions and (
