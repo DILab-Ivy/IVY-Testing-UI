@@ -79,11 +79,11 @@ assistant = client.beta.assistants.create(
                     "items": {
                         "type": "string"
                     },
-                    "description": "The current state of the robot and the painting surfaces. This is a list of strings representing the conditions, such as 'On(Robot, Floor)', 'Painted(Ceiling)', 'Dry(Ladder)', etc."
+                    "description": "The current state of the robot and the painting surfaces. This is a list of strings representing the conditions, such as 'On(Robot, Floor)', 'Painted(Ceiling)', 'Dry(Ladder)', etc. Please make sure to select at least one On condition to indicate robot position"
                   },
                   "operator": {
                     "type": "string",
-                    "description": "The operator to apply, which represents an action the robot can perform, such as 'climb-ladder' or 'paint-ceiling'."
+                    "description": "The operator to apply, which represents an action the robot can perform, such as 'climb-ladder', 'descend-ladder', 'paint-ceiling', or 'paint-ladder'. Make sure to only submit one of the available operators "
                   }
                 },
                 "required": [
@@ -106,14 +106,14 @@ assistant = client.beta.assistants.create(
                             "items": {
                                 "type": "string"
                             },
-                            "description": "The initial state of the robot and the painting surfaces. This is a list of strings representing the conditions, such as 'On(Robot, Floor)', 'Painted(Ceiling)', 'Dry(Ladder)', etc."
+                            "description": "The initial state of the robot and the painting surfaces. This is a list of strings representing the conditions, such as 'On(Robot, Floor)', 'Painted(Ceiling)', 'Dry(Ladder)', etc. Please make sure to select at least one On condition to indicate robot position"
                         },
                         "goal_conditions": {
                             "type": "array",
                             "items": {
                                 "type": "string"
                             },
-                            "description": "The desired goal state that the robot should achieve. This is a list of strings representing the conditions, such as 'Painted(Ceiling)', 'Painted(Ladder)'."
+                            "description": "The desired goal state that the robot should achieve. This is a list of strings representing the conditions, such as 'Painted(Ceiling)', 'Painted(Ladder)'. Please make sure to select one or both of the available Painted conditions when using this tool"
                         }
                     },
                     "required": [
