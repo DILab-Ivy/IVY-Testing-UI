@@ -101,7 +101,7 @@ def get_mage_response(question: str) -> str:
 
     # ASSISTANT_ID = "asst_Hh9KFq4TgDdijln6CyTZgIlz" #v15
     # ASSISTANT_ID = "asst_bTejWDz2qFjzlsjvLgmAACez"  # GPP assistant V18 tmk_str referencing
-    ASSISTANT_ID = "asst_AGRttSHIDkDwaB5A7HHQjH1o" # Robot Planning assistant v1
+    ASSISTANT_ID = "asst_BEgzOsMhVRvYU46U1UWNPHhS" # Robot Planning assistant v5
 
     # Load the existing assistant
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)

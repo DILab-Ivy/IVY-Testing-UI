@@ -75,3 +75,4 @@ assistant = client.beta.assistants.create(
 
 ASSISTANT_ID = assistant.id
 print(ASSISTANT_ID)
+client.beta.assistants._delete(ASSISTANT_ID)
