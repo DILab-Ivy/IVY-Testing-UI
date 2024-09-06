@@ -498,7 +498,7 @@ with gr.Blocks(
     def submit_rating_clear_update_question(response_concatenated_eval_ratings):
         global EVALUATION_QUESTION_NUM
         response_text, concatenated_eval_ratings = (
-            response_concatenated_eval_ratings.split("-")
+            response_concatenated_eval_ratings.split("-response-eval-delim-")
         )
         log_evaluation_response(
             MCM_SKILL,
@@ -528,7 +528,7 @@ with gr.Blocks(
                 radio.checked = false;
             });
             
-            return response_text + '-' + [metric1_value, metric2_value, metric3_value, metric4_value, metric5_value].join();
+            return response_text + '-response-eval-delim-' + [metric1_value, metric2_value, metric3_value, metric4_value, metric5_value].join();
         }
         """
     submit_rating_button.click(
