@@ -11,8 +11,8 @@ import gradio as gr
 import httpx
 import requests
 import uvicorn
-url_params
 import random
+
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
