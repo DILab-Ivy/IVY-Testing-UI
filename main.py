@@ -11,6 +11,8 @@ import gradio as gr
 import httpx
 import requests
 import uvicorn
+import random
+
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
@@ -35,6 +37,7 @@ MCM_SKILL = "Classification"
 MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
 EVALUATION_QUESTIONS = []
 EVALUATION_QUESTION_NUM = 0
+USE_TEST_EVAL_DB = False
 
 app = FastAPI()
 
@@ -205,9 +208,6 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
                             f"# Welcome to Ivy Chatbot, {UserConfig.USER_NAME}"
                         )
 
-        # Persist skill across pages.
-        if MCM_SKILL:
-            skill_name = MCM_SKILL
         # Retrieve skill from query params if available.
         if "skill" in dict(request.query_params):
             skill_param = dict(request.query_params)["skill"]
@@ -509,6 +509,7 @@ with gr.Blocks(
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][0],
             response_text,
             concatenated_eval_ratings.split(","),
+            USE_TEST_EVAL_DB,
         )
         EVALUATION_QUESTION_NUM += 1
         return [
@@ -558,7 +559,7 @@ with gr.Blocks(
             EVALUATION_QUESTIONS.append(
                 (question_dict["QuestionType"], question_dict["Question"])
             )
-        EVALUATION_QUESTIONS.sort()
+        random.shuffle(EVALUATION_QUESTIONS)
 
     def update_skill_evaluation(skill_name):
         global MCM_SKILL
@@ -572,9 +573,17 @@ with gr.Blocks(
             create_progress_indicator(EVALUATION_QUESTION_NUM),
         ]
 
-    def on_page_load_evaluation(skill_name):
-        if MCM_SKILL:
-            skill_name = MCM_SKILL  # Maintain state across pages
+    def on_page_load_evaluation(skill_name, request: gr.Request):
+        if "eval_skill" in dict(request.query_params):
+            skill_param = dict(request.query_params)["eval_skill"]
+            if skill_param in SKILL_NAME_TO_MCM_URL:
+                skill_name = skill_param
+        update_skill_evaluation(skill_name)
+
+        if "use_test_eval_db" in dict(request.query_params):
+            global USE_TEST_EVAL_DB
+            USE_TEST_EVAL_DB = dict(request.query_params)["use_test_eval_db"] == "true"
+
         first_question_to_display = update_skill_evaluation(skill_name)[0]
         return [
             create_progress_indicator(EVALUATION_QUESTION_NUM),

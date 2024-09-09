@@ -23,6 +23,7 @@ login_table = dynamodb.Table("UserLogin")
 chat_history_table = dynamodb.Table("ChatHistory")
 evaluation_questions_table = dynamodb.Table("EvalQuestions")
 evaluation_responses_table = dynamodb.Table("Evaluation")
+test_evaluation_responses_table = dynamodb.Table("TestEvaluation")
 
 
 ####################################################################################
@@ -146,7 +147,7 @@ def get_evaluation_questions(skill_name):
 
 
 def log_evaluation_response(
-    mcm_skill, question, question_type, response_text, eval_ratings
+    mcm_skill, question, question_type, response_text, eval_ratings, use_test_eval_db
 ):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
@@ -165,7 +166,13 @@ def log_evaluation_response(
         "Metric_Comprehensibility": eval_ratings[3],
         "Metric_Compactness": eval_ratings[4],
     }
-    evaluation_responses_table.put_item(Item=eval_response_data)
+    try:
+        if use_test_eval_db:
+            test_evaluation_responses_table.put_item(Item=eval_response_data)
+        else:
+            evaluation_responses_table.put_item(Item=eval_response_data)
+    except Exception as e:
+        print(f"Error logging evaluation response: {str(e)}")
 
 
 ####################################################################################
