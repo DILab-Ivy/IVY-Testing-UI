@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import base64
 import sys
 import time
 from datetime import datetime, timezone
@@ -5,31 +10,27 @@ from datetime import datetime, timezone
 import gradio as gr
 import httpx
 import requests
-import base64
 import uvicorn
+url_params
 import random
-
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
 from chat_logging import *
-
-
 from constants import (
-    IS_DEVELOPER_VIEW,
-    ON_LOCALHOST,
-    SKILL_NAME_TO_MCM_URL,
-    COGNITO_DOMAIN,
-    REDIRECT_URL,
-    EVALUATION_URL,
     CLIENT_ID,
     CLIENT_SECRET,
-    LOGIN_URL,
+    COGNITO_DOMAIN,
+    EVALUATION_METRIC_DESCRIPTION,
+    EVALUATION_URL,
     GET_ACCESS_TOKEN_URL,
     GET_USER_INFO_URL,
-    EVALUATION_METRIC_DESCRIPTION,
+    IS_DEVELOPER_VIEW,
+    LOGIN_URL,
+    ON_LOCALHOST,
+    REDIRECT_URL,
+    SKILL_NAME_TO_MCM_URL,
 )
-
 from user_data import UserConfig
 
 MCM_SKILL = "Classification"
@@ -112,10 +113,13 @@ def get_mcm_response(question: str) -> str:
     except httpx.RequestError as e:
         print(f"HTTP request failed: {e}")
         return ""
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return ""
 
 
 # Gradio Interface Setup
-with gr.Blocks() as ivy_main_page:
+with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
     # Title
     welcome_msg = gr.Markdown()
     # Settings
@@ -598,7 +602,7 @@ with gr.Blocks(
         [question_text, response_text, progress_bar],
     )
 
-with gr.Blocks() as post_eval_page:
+with gr.Blocks(css="footer {visibility: hidden}") as post_eval_page:
     gr.HTML(
         f"<h1>Thank you for evaluating Ivy.</h1>You can close this window or go back to <a href='{EVALUATION_URL}' target='_self'>evaluation page</a> for evaluating another skill."
     )
