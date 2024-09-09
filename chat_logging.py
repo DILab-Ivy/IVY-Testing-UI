@@ -166,10 +166,13 @@ def log_evaluation_response(
         "Metric_Comprehensibility": eval_ratings[3],
         "Metric_Compactness": eval_ratings[4],
     }
-    if use_test_eval_db:
-        test_evaluation_responses_table.put_item(Item=eval_response_data)
-    else:
-        evaluation_responses_table.put_item(Item=eval_response_data)
+    try:
+        if use_test_eval_db:
+            test_evaluation_responses_table.put_item(Item=eval_response_data)
+        else:
+            evaluation_responses_table.put_item(Item=eval_response_data)
+    except Exception as e:
+        print(f"Error logging evaluation response: {str(e)}")
 
 
 ####################################################################################
