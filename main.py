@@ -7,6 +7,7 @@ import httpx
 import requests
 import base64
 import uvicorn
+import random
 
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
@@ -554,7 +555,7 @@ with gr.Blocks(
             EVALUATION_QUESTIONS.append(
                 (question_dict["QuestionType"], question_dict["Question"])
             )
-        EVALUATION_QUESTIONS.sort()
+        random.shuffle(EVALUATION_QUESTIONS)
 
     def update_skill_evaluation(skill_name):
         global MCM_SKILL
