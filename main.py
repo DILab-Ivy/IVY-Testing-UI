@@ -372,7 +372,7 @@ with gr.Blocks(
         question_text = gr.Textbox(
             label="Evaluation Question",
             value="",
-            interactive=False,
+            interactive=True,
             scale=5,
         )
         submit_question_button = gr.Button(value="Submit", variant="primary")
