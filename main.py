@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import base64
+import random
 import sys
 import time
 from datetime import datetime, timezone
@@ -11,8 +12,6 @@ import gradio as gr
 import httpx
 import requests
 import uvicorn
-import random
-
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
@@ -33,8 +32,10 @@ from constants import (
 )
 from user_data import UserConfig
 
-MCM_SKILL = "Classification"
+IVY_BACKEND = "MAGE"
+IVY_SKILL = "Classification"
 MCM_URL = "https://classification.dilab-ivy.com/ivy/ask_question"
+MAGE_URL = "https://mage.dilab-ivy.com/ivy/ask_question"
 EVALUATION_QUESTIONS = []
 EVALUATION_QUESTION_NUM = 0
 USE_TEST_EVAL_DB = False
@@ -97,7 +98,14 @@ def get_access_token_and_user_info(url_code):
         return False
 
 
-# Sends a POST request to the MCM, Returns response
+def get_response(question: str) -> str:
+    print("Using Backend: ", ivy_backend.value)
+    if ivy_backend.value == "MCM":
+        return get_mcm_response(question)
+    elif ivy_backend.value == "MAGE":
+        return get_mage_response(question)
+
+
 def get_mcm_response(question: str) -> str:
     try:
         response = httpx.post(
@@ -118,13 +126,40 @@ def get_mcm_response(question: str) -> str:
         return ""
 
 
+def get_mage_response(question: str) -> str:
+    try:
+        response = httpx.post(
+            MAGE_URL,
+            json={
+                "question": question,
+                "api_key": mcm_api_key.value,
+                "skill": IVY_SKILL,
+            },
+            timeout=timeout_secs.value,
+        )
+        return response.json().get("response", "")
+    except httpx.RequestError as e:
+        print(f"HTTP request failed: {e}")
+        return ""
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return ""
+
+
 # Gradio Interface Setup
 with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
     # Title
     welcome_msg = gr.Markdown()
     # Settings
     with gr.Row():
-        mcm_skill_ask_ivy = gr.Dropdown(
+        ivy_backend = gr.Dropdown(
+            choices=["MCM", "MAGE"],
+            value="MAGE",
+            multiselect=False,
+            label="Backend",
+            interactive=True,
+        )
+        ivy_selected_skill = gr.Dropdown(
             choices=SKILL_NAME_TO_MCM_URL.keys(),
             value="Classification",
             multiselect=False,
@@ -140,7 +175,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
                     # MCM API Key
                     mcm_api_key = gr.Textbox(
                         value="123456789",
-                        label="MCM API Key",
+                        label="API Key",
                         interactive=True,
                     )
                     timeout_secs = gr.Slider(
@@ -176,10 +211,16 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
         )
 
     def update_skill_ask_ivy(skill_name):
-        global MCM_SKILL
+        global IVY_SKILL
         global MCM_URL
-        MCM_SKILL = skill_name
+        IVY_SKILL = skill_name
         MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
+        return []
+
+    def updte_ivy_backend(backend):
+        global IVY_BACKEND
+        print("Backend Updated: ", backend)
+        IVY_BACKEND = backend
         return []
 
     def on_page_load_ask_ivy(skill_name, request: gr.Request):
@@ -230,7 +271,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
 
     def get_response_from_ivy(history):
         history[-1][1] = ""
-        response = get_mcm_response(history[-1][0])
+        response = get_response(history[-1][0])
         for character in response:
             history[-1][1] += character
             time.sleep(0.005)
@@ -242,6 +283,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
             history[-1][0],
             history[-1][1],
             "no_reaction",
+            IVY_BACKEND,
         )
 
     def handle_download_click():
@@ -250,16 +292,18 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
 
     ivy_main_page.load(
         on_page_load_ask_ivy,
-        [mcm_skill_ask_ivy],
+        [ivy_selected_skill],
         [
             welcome_msg,
-            mcm_skill_ask_ivy,
+            ivy_selected_skill,
             settings_ask_ivy,
             clear,
             flag_download_button_grp_ask_ivy,
         ],
     )
-    mcm_skill_ask_ivy.change(update_skill_ask_ivy, [mcm_skill_ask_ivy], [chatbot])
+    ivy_selected_skill.change(update_skill_ask_ivy, [ivy_selected_skill], [chatbot])
+    ivy_backend.change(updte_ivy_backend, [ivy_backend], [])
+
     goto_eval_page_btn.click(
         None, None, None, js=f"() => window.open('{EVALUATION_URL}', '_blank')"
     )
@@ -333,14 +377,24 @@ with gr.Blocks(
         )
         submit_question_button = gr.Button(value="Submit", variant="primary")
         skip_question_button = gr.Button(value="Skip Question")
-    response_text = gr.Textbox(
-        label="Evaluation Response",
-        placeholder="Response will appear here..",
-        value="",
-        interactive=False,
-        scale=1,
-        lines=5,
-    )
+
+    with gr.Row():
+        response_text1 = gr.Textbox(
+            label="Evaluation Response 1",
+            placeholder="Response from either MAGE / MCM will appear here..",
+            value="",
+            interactive=False,
+            scale=1,
+            lines=5,
+        )
+        response_text2 = gr.Textbox(
+            label="Evaluation Response 2",
+            placeholder="Response from either MAGE / MCM will appear here..",
+            value="",
+            interactive=False,
+            scale=1,
+            lines=5,
+        )
 
     def get_metric_name(metric_name):
         return f"""
@@ -443,7 +497,25 @@ with gr.Blocks(
         progress_html = progress_html % progress_dots_html
         return progress_html
 
-    submit_question_button.click(get_mcm_response, question_text, response_text)
+    def get_both_response(question: str):
+        resp1 = get_mcm_response(question)
+        resp2 = get_mage_response(question)
+
+        resp1 += "\n\n\n\n\n\n\n (MCM)"
+        resp2 += "\n\n\n\n\n\n\n (MAGE)"
+
+        # Randomly shuffle the responses
+        if random.randint(0, 1):
+            return resp1, resp2
+
+        return resp2, resp1
+
+    # Update response 1 and response 2 textboxes
+    submit_question_button.click(
+        get_both_response,
+        [question_text],
+        [response_text1, response_text2],
+    )
 
     def get_submit_rating_btn():
         if EVALUATION_QUESTION_NUM == len(EVALUATION_QUESTIONS) - 1:
@@ -468,6 +540,7 @@ with gr.Blocks(
             create_progress_indicator(EVALUATION_QUESTION_NUM),
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
             "",
+            "",
             get_submit_rating_btn(),
             get_skip_question_btn(),
         ]
@@ -478,7 +551,8 @@ with gr.Blocks(
         [
             progress_bar,
             question_text,
-            response_text,
+            response_text1,
+            response_text2,
             submit_rating_button,
             skip_question_button,
         ],
@@ -500,48 +574,64 @@ with gr.Blocks(
 
     def submit_rating_clear_update_question(response_concatenated_eval_ratings):
         global EVALUATION_QUESTION_NUM
-        response_text, concatenated_eval_ratings = (
+        response_texts, concatenated_eval_ratings = (
             response_concatenated_eval_ratings.split("-response-eval-delim-")
         )
+        response_text1, response_text2 = response_texts.split("-response-split-")
+
         log_evaluation_response(
-            MCM_SKILL,
+            IVY_SKILL,
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][0],
-            response_text,
+            response_text1,
             concatenated_eval_ratings.split(","),
             USE_TEST_EVAL_DB,
+            IVY_BACKEND,
         )
+        log_evaluation_response(
+            IVY_SKILL,
+            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
+            EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][0],
+            response_text2,
+            concatenated_eval_ratings.split(","),
+            USE_TEST_EVAL_DB,
+            IVY_BACKEND,
+        )
+
         EVALUATION_QUESTION_NUM += 1
         return [
             create_progress_indicator(EVALUATION_QUESTION_NUM),
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
+            "",
             "",
             get_submit_rating_btn(),
             get_skip_question_btn(),
         ]
 
     submit_rating_button_js = """
-        function fetch_ratings_and_clear(response_text) {
+        function fetch_ratings_and_clear(response_text1, response_text2) {
             metric1_value = document.querySelector('input[name="metric1"]:checked')?.value || 'None';
             metric2_value = document.querySelector('input[name="metric2"]:checked')?.value || 'None';
             metric3_value = document.querySelector('input[name="metric3"]:checked')?.value || 'None';
             metric4_value = document.querySelector('input[name="metric4"]:checked')?.value || 'None';
             metric5_value = document.querySelector('input[name="metric5"]:checked')?.value || 'None';
-            
+
             document.querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.checked = false;
             });
-            
-            return response_text + '-response-eval-delim-' + [metric1_value, metric2_value, metric3_value, metric4_value, metric5_value].join();
+
+            return response_text1 + '-response-split-' + response_text2 + '-response-eval-delim-' + [metric1_value, metric2_value, metric3_value, metric4_value, metric5_value].join();
         }
         """
+
     submit_rating_button.click(
         submit_rating_clear_update_question,
-        inputs=[response_text],
+        inputs=[response_text1, response_text2],
         outputs=[
             progress_bar,
             question_text,
-            response_text,
+            response_text1,
+            response_text2,
             submit_rating_button,
             skip_question_button,
         ],
@@ -562,13 +652,14 @@ with gr.Blocks(
         random.shuffle(EVALUATION_QUESTIONS)
 
     def update_skill_evaluation(skill_name):
-        global MCM_SKILL
-        MCM_SKILL = skill_name
+        global IVY_SKILL
+        IVY_SKILL = skill_name
         global MCM_URL
         MCM_URL = SKILL_NAME_TO_MCM_URL[skill_name]
         update_eval_questions(skill_name)
         return [
             EVALUATION_QUESTIONS[EVALUATION_QUESTION_NUM][1],
+            "",
             "",
             create_progress_indicator(EVALUATION_QUESTION_NUM),
         ]
@@ -599,7 +690,7 @@ with gr.Blocks(
     mcm_skill_evaluation.change(
         update_skill_evaluation,
         [mcm_skill_evaluation],
-        [question_text, response_text, progress_bar],
+        [question_text, response_text1, response_text2, progress_bar],
     )
 
 with gr.Blocks(css="footer {visibility: hidden}") as post_eval_page:

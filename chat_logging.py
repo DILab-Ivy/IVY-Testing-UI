@@ -5,17 +5,17 @@
 # update chat reactions, fetch flagged messages, and generate CSV files of flagged chats.
 #####################################################################################################################
 
+import csv
+import os
+import tempfile
 import time
 from datetime import datetime, timezone
+
 import boto3
-import csv
-import tempfile
-import os
 import gradio as gr
 
 # Access user data file
 from user_data import UserConfig
-
 
 # Initialize DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
@@ -46,7 +46,7 @@ def log_user_login(user_id, session_id):
 ####################################################################################
 
 
-def log_chat_history(user_id, session_id, question, response, reaction):
+def log_chat_history(user_id, session_id, question, response, reaction, backend):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
@@ -58,6 +58,7 @@ def log_chat_history(user_id, session_id, question, response, reaction):
         "Question": question,
         "Response": response,
         "Reaction": reaction,
+        "Backend": backend,
     }
 
     # Check if item exists and update or put item
@@ -147,7 +148,13 @@ def get_evaluation_questions(skill_name):
 
 
 def log_evaluation_response(
-    mcm_skill, question, question_type, response_text, eval_ratings, use_test_eval_db
+    mcm_skill,
+    question,
+    question_type,
+    response_text,
+    eval_ratings,
+    use_test_eval_db,
+    backend,
 ):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
@@ -165,6 +172,7 @@ def log_evaluation_response(
         "Metric_Confidence": eval_ratings[2],
         "Metric_Comprehensibility": eval_ratings[3],
         "Metric_Compactness": eval_ratings[4],
+        "Backend": backend,
     }
     try:
         if use_test_eval_db:
