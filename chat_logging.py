@@ -49,7 +49,7 @@ def log_user_login(user_id, session_id):
 def log_chat_history(user_id, session_id, question, response, reaction, backend):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
 
     chat_data = {
         "Username": user_id,
@@ -99,46 +99,56 @@ def update_chat_history(user_id, session_id, question, response, reaction):
 ####################################################################################
 
 
-def log_commended_response(history):
+def log_commended_response(
+    history, backend, user_id=UserConfig.USERNAME, session_id=UserConfig.ACCESS_TOKEN
+):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(
-        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "liked"
-    )
+    log_chat_history(user_id, session_id, question, response, "liked", backend)
     gr.Info("Saved successfully!")
 
 
-def log_disliked_response(history):
+def log_disliked_response(
+    history, backend, user_id=UserConfig.USERNAME, session_id=UserConfig.ACCESS_TOKEN
+):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(
-        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "disliked"
-    )
+    log_chat_history(user_id, session_id, question, response, "disliked", backend)
     gr.Info("Saved successfully!")
 
 
-def log_flagged_response(history):
+def log_flagged_response(
+    history, backend, user_id=UserConfig.USERNAME, session_id=UserConfig.ACCESS_TOKEN
+):
     if len(history) == 0:
         return
     response = history[-1][1]
     question = history[-1][0]
-    log_chat_history(
-        UserConfig.USERNAME, UserConfig.ACCESS_TOKEN, question, response, "flagged"
-    )
+    log_chat_history(user_id, session_id, question, response, "flagged", backend)
     gr.Info("Saved successfully!")
 
 
-def chat_liked_or_disliked(history, data: gr.LikeData):
+def chat_liked_or_disliked(data: gr.LikeData, history, lti_data, session_settings):
     question = history[data.index[0]][0]
     response = history[data.index[0]][1]
     if data.liked:
-        log_commended_response([[question, response]])
+        log_commended_response(
+            [[question, response]],
+            session_settings.value["backend"],
+            lti_data.value["user_id"],
+            lti_data.value["session_id"],
+        )
     else:
-        log_disliked_response([[question, response]])
+        log_disliked_response(
+            [[question, response]],
+            session_settings.value["backend"],
+            lti_data.value["user_id"],
+            lti_data.value["session_id"],
+        )
 
 
 def get_evaluation_questions(skill_name):

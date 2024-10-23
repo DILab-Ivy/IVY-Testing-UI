@@ -98,6 +98,18 @@ def get_access_token_and_user_info(url_code):
         return False
 
 
+def get_embed_response(
+    question: str, backend="", skill="", api_key="", timeout=None
+) -> str:
+    print("Using Backend: ", backend)
+    if backend == "MCM":
+        return get_mcm_response(
+            question, SKILL_NAME_TO_MCM_URL[skill], api_key, timeout
+        )
+    elif backend == "MAGE":
+        return get_mage_response(question, MAGE_URL, api_key, skill, timeout)
+
+
 def get_response(question: str) -> str:
     print("Using Backend: ", ivy_backend.value)
     if ivy_backend.value == "MCM":
@@ -106,16 +118,16 @@ def get_response(question: str) -> str:
         return get_mage_response(question)
 
 
-def get_mcm_response(question: str) -> str:
+def get_mcm_response(question: str, mcm_url="", api_key="", timeout=None) -> str:
     try:
         response = httpx.post(
-            MCM_URL,
+            mcm_url or MCM_URL,
             json={
                 "question": question,
-                "api_key": mcm_api_key.value,
+                "api_key": api_key or mcm_api_key.value,
                 "Episodic_Knowledge": {},
             },
-            timeout=timeout_secs.value,
+            timeout=timeout or timeout_secs.value,
         )
         return response.json().get("response", "")
     except httpx.RequestError as e:
@@ -126,16 +138,18 @@ def get_mcm_response(question: str) -> str:
         return ""
 
 
-def get_mage_response(question: str) -> str:
+def get_mage_response(
+    question: str, mage_url="", api_key="", skill="", timeout=None
+) -> str:
     try:
         response = httpx.post(
-            MAGE_URL,
+            mage_url or MAGE_URL,
             json={
                 "question": question,
-                "api_key": mcm_api_key.value,
-                "skill": IVY_SKILL,
+                "api_key": api_key or mcm_api_key.value,
+                "skill": skill or IVY_SKILL,
             },
-            timeout=timeout_secs.value,
+            timeout=timeout or timeout_secs.value,
         )
         return response.json().get("response", "")
     except httpx.RequestError as e:
@@ -144,6 +158,143 @@ def get_mage_response(question: str) -> str:
     except Exception as e:
         print(f"An error occurred: {e}")
         return ""
+
+
+with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
+    # Settings
+    # embed_backend = "MCM"
+    # embed_skill = "Classification"
+    # embed_mcm_api_key = "123456789"
+    # embed_timeout_secs = 60
+    # Save these things in the state variable
+    session_settings = gr.State()
+    lti_data = gr.State()
+    # Title
+    embed_welcome_msg = gr.Markdown()
+
+    embed_chat_area = gr.Chatbot(
+        label="Your Conversation",
+        show_copy_button=True,
+        placeholder="Your conversations will appear here...",
+    )
+    embed_chatbox = gr.Textbox(
+        label="Question",
+        placeholder="Please enter your question here...",
+        show_copy_button=True,
+        autofocus=True,
+        show_label=True,
+    )
+    embed_submit_btn = gr.Button(value="Submit", variant="primary")
+
+    def on_page_load_ask_ivy_embed(request: gr.Request):
+        backend, skill, mcm_api_key, timeout = "", "", "123456789", 60
+        if "backend" in dict(request.query_params):
+            backend = dict(request.query_params)["backend"]
+        if backend not in ["MCM", "MAGE"]:
+            backend = "MCM"
+
+        if "skill" in dict(request.query_params):
+            skill = dict(request.query_params)["skill"]
+        if skill not in SKILL_NAME_TO_MCM_URL:
+            raise Exception("skill url param not supported")
+
+        if "mcm_api_key" in dict(request.query_params):
+            mcm_api_key = dict(request.query_params)["mcm_api_key"]
+        if "timeout" in dict(request.query_params):
+            timeout = dict(request.query_params)["timeout"]
+
+        session_settings = {
+            "backend": backend,
+            "skill": skill,
+            "mcm_api_key": mcm_api_key,
+            "timeout_secs": timeout,
+        }
+
+        lti_data_from_url_params = {
+            "user_id": "",
+            "full_name": "",
+            "session_id": "",
+            "user_role": "",
+            "course_id": "",
+        }
+        if "user_id" in dict(request.query_params):
+            lti_data_from_url_params["user_id"] = dict(request.query_params)["user_id"]
+        if "full_name" in dict(request.query_params):
+            lti_data_from_url_params["full_name"] = dict(request.query_params)[
+                "full_name"
+            ]
+        if "session_id" in dict(request.query_params):
+            lti_data_from_url_params["session_id"] = dict(request.query_params)[
+                "session_id"
+            ]
+        if "user_role" in dict(request.query_params):
+            lti_data_from_url_params["user_role"] = dict(request.query_params)[
+                "user_role"
+            ]
+        if "course_id" in dict(request.query_params):
+            lti_data_from_url_params["course_id"] = dict(request.query_params)[
+                "course_id"
+            ]
+        return [gr.State(session_settings), gr.State(lti_data_from_url_params)]
+
+    def update_user_message(user_message, history):
+        return "", history + [[user_message, None]]
+
+    def get_response_from_ivy(history, settings, lti_data):
+        history[-1][1] = ""
+        response = get_embed_response(
+            history[-1][0],
+            settings.value["backend"],
+            settings.value["skill"],
+            settings.value["mcm_api_key"],
+            settings.value["timeout_secs"],
+        )
+        for character in response:
+            history[-1][1] += character
+            time.sleep(0.005)
+            yield history
+        # Log to DynamoDB every interaction here
+        log_chat_history(
+            lti_data.value["user_id"],
+            lti_data.value["session_id"],
+            history[-1][0],
+            history[-1][1],
+            "no_reaction",
+            settings.value["backend"],
+        )
+
+    ivy_embed_page.load(
+        on_page_load_ask_ivy_embed,
+        [],
+        [session_settings, lti_data],
+    )
+
+    embed_chatbox.submit(
+        update_user_message,
+        [embed_chatbox, embed_chat_area],
+        [embed_chatbox, embed_chat_area],
+        queue=False,
+    ).success(
+        get_response_from_ivy,
+        [embed_chat_area, session_settings, lti_data],
+        embed_chat_area,
+    )
+    embed_submit_btn.click(
+        update_user_message,
+        [embed_chatbox, embed_chat_area],
+        [embed_chatbox, embed_chat_area],
+        queue=False,
+    ).success(
+        get_response_from_ivy,
+        [embed_chat_area, session_settings, lti_data],
+        embed_chat_area,
+    )
+    embed_chat_area.like(
+        chat_liked_or_disliked, [embed_chat_area, lti_data, session_settings], None
+    )
+
+# Launch the Application
+ivy_embed_page.queue()
 
 
 # Gradio Interface Setup
@@ -698,6 +849,9 @@ with gr.Blocks(css="footer {visibility: hidden}") as post_eval_page:
         f"<h1>Thank you for evaluating Ivy.</h1>You can close this window or go back to <a href='{EVALUATION_URL}' target='_self'>evaluation page</a> for evaluating another skill."
     )
 
+app = gr.mount_gradio_app(
+    app, ivy_embed_page, path="/ask-ivy-embed", root_path="/ask-ivy-embed"
+)
 app = gr.mount_gradio_app(app, ivy_main_page, path="/ask-ivy", root_path="/ask-ivy")
 app = gr.mount_gradio_app(
     app, evaluation_page, path="/evaluation", root_path="/evaluation"
