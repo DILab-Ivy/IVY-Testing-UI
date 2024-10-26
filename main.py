@@ -161,17 +161,12 @@ def get_mage_response(
 
 
 with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
-    # Settings
-    # embed_backend = "MCM"
-    # embed_skill = "Classification"
-    # embed_mcm_api_key = "123456789"
-    # embed_timeout_secs = 60
-    # Save these things in the state variable
     session_settings = gr.State()
     lti_data = gr.State()
     # Title
     embed_welcome_msg = gr.Markdown()
 
+    embed_message = gr.Markdown("## Ask your personal tutor!")
     embed_chat_area = gr.Chatbot(
         label="Your Conversation",
         show_copy_button=True,
@@ -261,6 +256,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             history[-1][1],
             "no_reaction",
             settings.value["backend"],
+            settings.value["skill"]
         )
 
     ivy_embed_page.load(
@@ -435,6 +431,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
             history[-1][1],
             "no_reaction",
             IVY_BACKEND,
+            IVY_SKILL
         )
 
     def handle_download_click():
