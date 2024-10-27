@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 
 import gradio as gr
+import hashlib
 import httpx
 import requests
 import uvicorn
@@ -219,9 +220,11 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
                 "full_name"
             ]
         if "session_id" in dict(request.query_params):
-            lti_data_from_url_params["session_id"] = dict(request.query_params)[
+            session_id = dict(request.query_params)[
                 "session_id"
             ]
+            lti_data_from_url_params["session_id"] = hashlib.sha256(
+                session_id.encode('utf-8')).hexdigest()
         if "user_role" in dict(request.query_params):
             lti_data_from_url_params["user_role"] = dict(request.query_params)[
                 "user_role"
