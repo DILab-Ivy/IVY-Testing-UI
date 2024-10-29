@@ -46,7 +46,7 @@ def log_user_login(user_id, session_id):
 ####################################################################################
 
 
-def log_chat_history(user_id, session_id, question, response, reaction, backend, skill):
+def log_chat_history(user_id, session_id, question, response, reaction, backend, skill, full_response_json={}):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
@@ -59,7 +59,8 @@ def log_chat_history(user_id, session_id, question, response, reaction, backend,
         "Response": response,
         "Reaction": reaction,
         "Backend": backend,
-        "Skill": skill
+        "Skill": skill,
+        "FullResponseJson": full_response_json
     }
 
     # Check if item exists and update or put item
@@ -78,7 +79,7 @@ def log_chat_history(user_id, session_id, question, response, reaction, backend,
         print("Chat data logged successfully")
 
 
-def update_chat_history(user_id, session_id, question, response, reaction):
+def update_chat_history(user_id, session_id, question, response, reaction, full_response_json):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
@@ -91,7 +92,7 @@ def update_chat_history(user_id, session_id, question, response, reaction):
         },
         UpdateExpression="SET Reaction = :reaction",
         ExpressionAttributeValues={":reaction": reaction},
-        ReturnValues="UPDATED_NEW",
+        ReturnValues="UPDATED_NEW"
     )
 
 
