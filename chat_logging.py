@@ -92,7 +92,7 @@ def update_chat_history(user_id, session_id, question, response, reaction, full_
         },
         UpdateExpression="SET Reaction = :reaction",
         ExpressionAttributeValues={":reaction": reaction},
-        ReturnValues="UPDATED_NEW"
+        ReturnValues="UPDATED_NEW",
     )
 
 
