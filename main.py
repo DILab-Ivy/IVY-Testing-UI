@@ -15,6 +15,7 @@ import requests
 import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
+import json
 
 from chat_logging import *
 from constants import (
@@ -249,7 +250,31 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             settings.value["mcm_api_key"],
             settings.value["timeout_secs"],
         )
-        response = full_response_json.json().get("response", "")
+        # # Debugging: print the type and content of the response
+        # print("Type of full_response_json:", type(full_response_json))
+        # print("Content of full_response_json:", full_response_json)
+
+        # Check if full_response_json is non-empty and parse it safely
+        if isinstance(full_response_json, str) and full_response_json.strip():
+            try:
+                response_data = json.loads(full_response_json)
+            except json.JSONDecodeError:
+                print("Error: Received invalid JSON response")
+                response_data = {}  # Fallback to empty dict if JSON is invalid
+        elif hasattr(full_response_json, 'json'):
+            # Assuming it's a response object from `requests` or similar library
+            try:
+                response_data = full_response_json.json()
+            except ValueError:
+                print("Error: Response object does not contain valid JSON")
+                response_data = {}
+        else:
+            print("Error: full_response_json is empty or in an unexpected format")
+            response_data = {}
+
+        response = response_data.get("response", "")
+
+
         for character in response:
             history[-1][1] += character
             time.sleep(0.005)
@@ -308,7 +333,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
     with gr.Row():
         ivy_backend = gr.Dropdown(
             choices=["MCM", "MAGE"],
-            value="MAGE",
+            value="MCM",
             multiselect=False,
             label="Backend",
             interactive=True,
