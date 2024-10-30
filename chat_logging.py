@@ -17,6 +17,8 @@ import gradio as gr
 # Access user data file
 from user_data import UserConfig
 
+import json
+
 # Initialize DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 login_table = dynamodb.Table("UserLogin")
@@ -46,7 +48,7 @@ def log_user_login(user_id, session_id):
 ####################################################################################
 
 
-def log_chat_history(user_id, session_id, question, response, reaction, backend, skill):
+def log_chat_history(user_id, session_id, question, response, reaction, backend, skill, full_response_json={}):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
@@ -62,6 +64,20 @@ def log_chat_history(user_id, session_id, question, response, reaction, backend,
         "Skill": skill
     }
 
+    # Handle serialization of full_response_json
+    if isinstance(full_response_json, dict):
+        chat_data["FullResponseJson"] = json.dumps(full_response_json)
+    elif hasattr(full_response_json, 'json'):
+        # If full_response_json is a Response object, get the JSON content
+        try:
+            response_json = full_response_json.json()
+            chat_data["FullResponseJson"] = json.dumps(response_json)
+        except ValueError as e:
+            print(f"Failed to parse response JSON: {e}")
+            chat_data["FullResponseJson"] = json.dumps({"error": "Invalid response"})
+    else:
+        chat_data["FullResponseJson"] = json.dumps({"error": "Non-serializable object"})
+
     # Check if item exists and update or put item
     existing_item = chat_history_table.get_item(
         Key={
@@ -70,15 +86,29 @@ def log_chat_history(user_id, session_id, question, response, reaction, backend,
         }
     )
 
-    if "Item" in existing_item:
-        update_chat_history(user_id, session_id, question, response, reaction)
-        print("Chat data updated successfully")
-    else:
-        chat_history_table.put_item(Item=chat_data)
-        print("Chat data logged successfully")
+    # Adding error handling
+    try:
+        # Check if item exists and update or put item
+        existing_item = chat_history_table.get_item(
+            Key={
+                "Username": user_id,
+                "Timestamp": timestamp,
+            }
+        )
+
+        if "Item" in existing_item:
+            update_chat_history(user_id, session_id, question, response, reaction, full_response_json) 
+            print("Chat data updated successfully")
+        else:
+            chat_history_table.put_item(Item=chat_data)
+            chat_data["FullResponseJson"] = json.dumps(full_response_json)
+            print("Chat data logged successfully")
+
+    except Exception as e:
+        print(f"Error logging chat history: {e}")
 
 
-def update_chat_history(user_id, session_id, question, response, reaction):
+def update_chat_history(user_id, session_id, question, response, reaction, full_response_json):
     timestamp = time.time()
     dt = datetime.fromtimestamp(timestamp)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
@@ -89,8 +119,11 @@ def update_chat_history(user_id, session_id, question, response, reaction):
             "Username": user_id,
             "Timestamp": timestamp,
         },
-        UpdateExpression="SET Reaction = :reaction",
-        ExpressionAttributeValues={":reaction": reaction},
+        UpdateExpression="SET Reaction = :reaction, FullResponseJson = :full_response_json",
+        ExpressionAttributeValues={
+            ":reaction": reaction,
+            ":full_response_json": json.dumps(full_response_json)
+        },
         ReturnValues="UPDATED_NEW",
     )
 

@@ -15,6 +15,7 @@ import requests
 import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
+import json
 
 from chat_logging import *
 from constants import (
@@ -101,25 +102,27 @@ def get_access_token_and_user_info(url_code):
 
 def get_embed_response(
     question: str, backend="", skill="", api_key="", timeout=None
-) -> str:
+) -> dict:
     print("Using Backend: ", backend)
     if backend == "MCM":
         return get_mcm_response(
             question, SKILL_NAME_TO_MCM_URL[skill], api_key, timeout
         )
     elif backend == "MAGE":
+        # TODO: update get_mage_response to return dict vs string
         return get_mage_response(question, MAGE_URL, api_key, skill, timeout)
 
 
-def get_response(question: str) -> str:
+def get_response(question: str) -> dict:
     print("Using Backend: ", ivy_backend.value)
     if ivy_backend.value == "MCM":
         return get_mcm_response(question)
     elif ivy_backend.value == "MAGE":
+        # TODO: update get_mage_response to return dict vs string
         return get_mage_response(question)
 
 
-def get_mcm_response(question: str, mcm_url="", api_key="", timeout=None) -> str:
+def get_mcm_response(question: str, mcm_url="", api_key="", timeout=None) -> dict:
     try:
         response = httpx.post(
             mcm_url or MCM_URL,
@@ -130,7 +133,7 @@ def get_mcm_response(question: str, mcm_url="", api_key="", timeout=None) -> str
             },
             timeout=timeout or timeout_secs.value,
         )
-        return response.json().get("response", "")
+        return response
     except httpx.RequestError as e:
         print(f"HTTP request failed: {e}")
         return ""
@@ -240,13 +243,38 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
 
     def get_response_from_ivy(history, settings, lti_data):
         history[-1][1] = ""
-        response = get_embed_response(
+        full_response_json = get_embed_response(
             history[-1][0],
             settings.value["backend"],
             settings.value["skill"],
             settings.value["mcm_api_key"],
             settings.value["timeout_secs"],
         )
+        # # Debugging: print the type and content of the response
+        # print("Type of full_response_json:", type(full_response_json))
+        # print("Content of full_response_json:", full_response_json)
+
+        # Check if full_response_json is non-empty and parse it safely
+        if isinstance(full_response_json, str) and full_response_json.strip():
+            try:
+                response_data = json.loads(full_response_json)
+            except json.JSONDecodeError:
+                print("Error: Received invalid JSON response")
+                response_data = {}  # Fallback to empty dict if JSON is invalid
+        elif hasattr(full_response_json, 'json'):
+            # Assuming it's a response object from `requests` or similar library
+            try:
+                response_data = full_response_json.json()
+            except ValueError:
+                print("Error: Response object does not contain valid JSON")
+                response_data = {}
+        else:
+            print("Error: full_response_json is empty or in an unexpected format")
+            response_data = {}
+
+        response = response_data.get("response", "")
+
+
         for character in response:
             history[-1][1] += character
             time.sleep(0.005)
@@ -259,7 +287,8 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             history[-1][1],
             "no_reaction",
             settings.value["backend"],
-            settings.value["skill"]
+            settings.value["skill"],
+            full_response_json
         )
 
     ivy_embed_page.load(
@@ -304,7 +333,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
     with gr.Row():
         ivy_backend = gr.Dropdown(
             choices=["MCM", "MAGE"],
-            value="MAGE",
+            value="MCM",
             multiselect=False,
             label="Backend",
             interactive=True,
@@ -421,7 +450,8 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
 
     def get_response_from_ivy(history):
         history[-1][1] = ""
-        response = get_response(history[-1][0])
+        full_response_json = get_response(history[-1][0])
+        response = full_response_json.json().get("response", "")
         for character in response:
             history[-1][1] += character
             time.sleep(0.005)
@@ -434,7 +464,8 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
             history[-1][1],
             "no_reaction",
             IVY_BACKEND,
-            IVY_SKILL
+            IVY_SKILL,
+            full_response_json
         )
 
     def handle_download_click():
@@ -649,8 +680,9 @@ with gr.Blocks(
         return progress_html
 
     def get_both_response(question: str):
-        resp1 = get_mcm_response(question)
-        resp2 = get_mage_response(question)
+        resp1 = get_mcm_response(question).json().get("response", "")
+        # TODO: update get_mage_response to return dict vs str
+        resp2 = get_mage_response(question).json().get("response", "")
 
         resp1 += "\n\n\n\n\n\n\n (MCM)"
         resp2 += "\n\n\n\n\n\n\n (MAGE)"
