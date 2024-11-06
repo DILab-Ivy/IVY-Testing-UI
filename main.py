@@ -169,20 +169,23 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
     # Title
     embed_welcome_msg = gr.Markdown()
 
-    embed_message = gr.Markdown("## Ask your personal tutor!")
+    embed_message = gr.Markdown("## Coach Ivy!")
     embed_chat_area = gr.Chatbot(
         label="Your Conversation",
         show_copy_button=True,
         placeholder="Your conversations will appear here...",
     )
     embed_chatbox = gr.Textbox(
-        label="Question",
+        label="Ask a Question",
         placeholder="Please enter your question here...",
         show_copy_button=True,
         autofocus=True,
         show_label=True,
     )
     embed_submit_btn = gr.Button(value="Submit", variant="primary")
+    gr.HTML(
+        '<br /><br /><span style="color: #FFD700; font-weight: bold;">⚠️</span> <span style="color: #AAAAAA;"><b style="color: #AAAAAA;">Disclaimer:</b> Ivy Coach uses Generative AI and may occasionally provide incorrect or incomplete information. It is designed to support learning but may not answer specific quiz-related questions.</span>'
+    )
 
     def on_page_load_ask_ivy_embed(request: gr.Request):
         backend, skill, mcm_api_key, timeout = "", "", "123456789", 60
@@ -258,7 +261,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             except json.JSONDecodeError:
                 print("Error: Received invalid JSON response")
                 response_data = {}  # Fallback to empty dict if JSON is invalid
-        elif hasattr(full_response_json, 'json'):
+        elif hasattr(full_response_json, "json"):
             # Assuming it's a response object from `requests` or similar library
             try:
                 response_data = full_response_json.json()
@@ -270,7 +273,6 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             response_data = {}
 
         response = response_data.get("response", "")
-
 
         for character in response:
             history[-1][1] += character
@@ -285,7 +287,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
             "no_reaction",
             settings.value["backend"],
             settings.value["skill"],
-            full_response_json
+            full_response_json,
         )
 
     ivy_embed_page.load(
@@ -462,7 +464,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
             "no_reaction",
             IVY_BACKEND,
             IVY_SKILL,
-            full_response_json
+            full_response_json,
         )
 
     def handle_download_click():
