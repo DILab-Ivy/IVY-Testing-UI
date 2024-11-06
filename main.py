@@ -169,7 +169,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
     # Title
     embed_welcome_msg = gr.Markdown()
 
-    embed_message = gr.Markdown("## Coach Ivy!")
+    embed_message = gr.Markdown("## Ivy Coach!")
     embed_chat_area = gr.Chatbot(
         label="Your Conversation",
         show_copy_button=True,
