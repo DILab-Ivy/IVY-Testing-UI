@@ -174,6 +174,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
         label="Your Conversation",
         show_copy_button=True,
         placeholder="Your conversations will appear here...",
+        autoscroll=False,
     )
     embed_chatbox = gr.Textbox(
         label="Ask a Question",
