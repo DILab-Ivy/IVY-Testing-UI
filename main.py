@@ -184,9 +184,6 @@ with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
         show_label=True,
     )
     embed_submit_btn = gr.Button(value="Submit", variant="primary")
-    gr.HTML(
-        '<br /><br /><span style="color: #FFD700; font-weight: bold;">⚠️</span> <span style="color: #AAAAAA;"><b style="color: #AAAAAA;">Disclaimer:</b> Ivy Coach uses Generative AI and may occasionally provide incorrect or incomplete information. It is designed to support learning but may not answer specific quiz-related questions.</span>'
-    )
 
     def on_page_load_ask_ivy_embed(request: gr.Request):
         backend, skill, mcm_api_key, timeout = "", "", "123456789", 60
