@@ -140,5 +140,5 @@ tr:hover {
 }
 
 footer {
-  visibility: hidden;
+  display:none !important;
 }

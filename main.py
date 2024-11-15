@@ -163,7 +163,7 @@ def get_mage_response(
         return ""
 
 
-with gr.Blocks(css="footer {visibility: hidden}") as ivy_embed_page:
+with gr.Blocks(css="footer {display:none !important}") as ivy_embed_page:
     session_settings = gr.State()
     lti_data = gr.State()
     # Title
@@ -323,7 +323,7 @@ ivy_embed_page.queue()
 
 
 # Gradio Interface Setup
-with gr.Blocks(css="footer {visibility: hidden}") as ivy_main_page:
+with gr.Blocks(css="footer {display:none !important}") as ivy_main_page:
     # Title
     welcome_msg = gr.Markdown()
     # Settings
@@ -873,7 +873,7 @@ with gr.Blocks(
         [question_text, response_text1, response_text2, progress_bar],
     )
 
-with gr.Blocks(css="footer {visibility: hidden}") as post_eval_page:
+with gr.Blocks(css="footer {display:none !important}") as post_eval_page:
     gr.HTML(
         f"<h1>Thank you for evaluating Ivy.</h1>You can close this window or go back to <a href='{EVALUATION_URL}' target='_self'>evaluation page</a> for evaluating another skill."
     )
